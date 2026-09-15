@@ -1,0 +1,40 @@
+[project]
+name = "fishsense_wuwnet"
+version = "0.1.0"
+description = "Flat-port refraction analysis for FishSense (WUWNet 2026)"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fishsense-core",
+    "ipykernel>=7.1.0",
+    "ipympl>=0.9.8",
+    "matplotlib>=3.10.7",
+    "numpy>=2.1",
+    "opencv-python-headless>=4.11,<5",
+    "pandas>=2.3.3",
+    "scipy>=1.16.3",
+    "tqdm>=4.67.1",
+]
+
+[tool.uv.sources]
+# Prebuilt PyO3 wheel from a GitHub release asset — fishsense-core is not on
+# PyPI and building it from source needs a Rust toolchain plus OpenSSL. This is
+# how fishsense-lite's data-processing worker installs it. CPU build (no +cu12):
+# nothing here touches the laser detector's torch path.
+fishsense-core = [
+    { url = "https://github.com/UCSD-E4E/fishsense-core/releases/download/fishsense-core-v4.0.0/fishsense_core-4.0.0-cp313-cp313-manylinux_2_34_x86_64.whl", marker = "python_version == '3.13'" },
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.12.0",
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "fishsense_wuwnet"
