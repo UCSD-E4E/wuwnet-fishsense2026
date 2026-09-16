@@ -283,7 +283,7 @@ Re-read after the A1/B1/B2/B5/C1 fixes. The paper is much stronger and the old i
 closed. This round found one thing that outranks anything in Round 1, because it concerns
 what the headline experiment actually measures.
 
-## H1. Section 6.1 does not test absolute scale, and the paper implies it does
+## H1. ~~Section 6.1 does not test absolute scale~~ — FIXED 2026-09-15
 
 The end-to-end experiment reads: calibrate the camera in air on the board, take `|O|` from
 a garage beam fit that is posed against the board, calibrate the laser from the decoy, then
@@ -313,7 +313,7 @@ Note also that "held out of both calibrations" is true of the *laser* calibratio
 board is the object the camera was calibrated on and the source of `|O|`'s scale. The
 phrase oversells.
 
-## H2. The absolute-scale test exists, passes, and is missing from the paper
+## H2. ~~The absolute-scale test is missing~~ — FIXED 2026-09-15, now section 6.2
 
 The decoy was calipered independently of the board: 312.5 mm long, 106.1 mm deep. Running
 the reference-free pipeline and reading the decoy's own metric length back gives
@@ -328,7 +328,7 @@ It is the paper's only such test and it is currently absent.
 Adding it costs a paragraph and converts "we measured a target held out of the laser
 calibration" into "and the metric scale is independently confirmed to 0.4%".
 
-## H3. Two different numbers are both called "the decoy's length"
+## H3. ~~Two numbers both called "the decoy's length"~~ — FIXED 2026-09-15
 
 Section 6.3 reports the length-based Tier 3 recovering **274 mm against 312.5 (−12%)**.
 H2 reports **311.2 mm (−0.4%)**. Both are correct and they are different quantities — the
@@ -340,7 +340,7 @@ This also sharpens a result the paper already half-states: the by-product is the
 **noisiest** output, and nobody should validate the calibration against it. Say so once,
 plainly, and give both numbers with their definitions.
 
-## H4. The leave-one-out row calibrates and tests on the same object
+## H4. ~~The leave-one-out row calibrates and tests on the same object~~ — FIXED 2026-09-15
 
 Section 6.1's leave-one-frame-out row fits the beam from nine frames of the board's
 apparent size and measures the board in the tenth. `|O|` pins absolute scale so it is not
@@ -363,12 +363,12 @@ already is, as an optimistic bound on the drift-free case rather than an indepen
 
 | # | fix | cost |
 |---|---|---|
-| 1 | State what section 6.1 tests and does not (H1) | an hour |
-| 2 | Add the absolute-scale check against the calipered decoy (H2) | an hour |
-| 3 | Distinguish the two decoy-length numbers (H3) | 20 minutes |
-| 4 | Label the leave-one-out row as optimistic (H4) | 10 minutes |
+| 1 | ~~State what section 6.1 tests and does not (H1)~~ | **done** |
+| 2 | ~~Add the absolute-scale check (H2)~~ | **done** -- new section 6.2, -0.4% |
+| 3 | ~~Distinguish the two decoy-length numbers (H3)~~ | **done** |
+| 4 | ~~Label the leave-one-out row as optimistic (H4)~~ | **done** |
 | 5 | Write related work, engaging Luczynski's evaluation directly | a day |
 | 6 | Figures, then ACM LaTeX | — |
 
-Items 1–4 are all corrections to what the paper *claims*, not to what it did, and together
-they take an afternoon. After them the only substantive gap is related work.
+Items 1–4 were all corrections to what the paper *claims*, not to what it did, and are
+done. **Related work is now the only substantive gap** before figures and formatting.

@@ -306,8 +306,21 @@ in the water. We test it directly. The camera is calibrated from the in-air sess
 and corrected with Pinax. The laser is calibrated from the **decoy session alone**, using
 only the apparent body height of a swinging fish-shaped object whose size was never
 measured. Both are then used to measure the **checkerboard** -- 549 mm along its long axis,
-calipered corner to corner, which appears in neither calibration -- over ten frames at
-1.1-4.5 m.
+calipered corner to corner, which appears in neither *laser* calibration -- over ten
+frames at 1.1-4.5 m.
+
+**What this does and does not put under test.** The board is held out of the laser
+calibration, but it is the object the camera was calibrated on and, through the garage
+beam fit's poses, the origin of `|O|`'s scale. So an error in the board's assumed size
+propagates into `|O|`, into every range, and into the measured span -- where it cancels
+against a ground truth that scaled with it. We verified this is exact rather than
+approximate: scaling the assumed board pitch from 0.95x to 1.10x moves `|O|` from 98.98 mm
+to 114.61 mm and leaves the error at +2.24% throughout.
+
+This experiment therefore measures the laser's **angular** calibration and the refraction
+correction, and is blind to absolute metric scale. That is the right target -- angle is
+what drifts between dives, and section 3's budget is a bound on angle -- but it is not a
+metric accuracy result, and section 6.2 supplies the scale test separately.
 
 Three baselines bracket the result. *No per-dive calibration* uses the bench beam measured
 in air 48 minutes earlier: what a rig does if it trusts its extrinsics. *Conventional* is
@@ -315,7 +328,9 @@ the board-referenced beam fit, the slate equivalent -- scored **in-sample**, on 
 frames it was fitted to, so it is an optimistic bound rather than a fair competitor. The
 reference-free row is scored two ways: across sessions (the decoy precedes the board frames
 by ten minutes and one handling event, so it carries real drift) and leave-one-frame-out
-within a session (which isolates the estimator from drift).
+within a session, which isolates the estimator from drift but calibrates and tests on the
+same object, and is therefore an optimistic bound of its own rather than an independent
+result.
 
 | laser calibration | median | p90 abs | max abs |
 |---|---|---|---|
@@ -351,7 +366,27 @@ One systematic appeared in the reference-free and conventional rows alike when t
 was assumed square: its long-axis span read 0.4 percentage points differently from its
 short-axis span. Section 8 reports what that turned out to be.
 
-### 6.2 Pool: a board of unknown size
+### 6.2 Absolute scale, against an independently calipered object
+
+Section 6.1 is blind to scale by construction. The decoy supplies the missing test,
+because its dimensions were calipered directly -- 312.5 mm long, 106.1 mm deep just aft of
+the dorsal fin -- and so are independent of the board and of everything in the calibration
+chain. Reading the decoy's own metric length back out of the reference-free pipeline:
+
+**311.2 mm, against 312.5 mm calipered: -0.4%.**
+
+Aggregated at p90 over the thirteen frames rather than by mean, because yaw foreshortens
+one-sidedly and a mean would measure the decoy's pose distribution rather than the decoy.
+Unlike section 6.1 this chain -- calipered object, ranges, beam, `|O|`, the garage board's
+poses -- responds one-for-one to an error in the board's assumed size, so it is a genuine
+test of absolute scale, and the rig passes it at half a percent.
+
+The same reconstruction recovers the decoy's body-height profile, which peaks at 109.4 mm;
+the calipered 106.1 mm falls on it 8% of a body length aft of the deepest point, which is
+where "just behind the dorsal fin" should land. Shape and scale are both recovered, from a
+calibration that never saw a ruler in the water.
+
+### 6.3 Pool: a board of unknown size
 
 Treating the checkerboard as an anonymous rigid object (√ convex-hull area of its
 corners in corrected coordinates, tilt left in, its 42 mm pitch never used), ten frames
@@ -370,10 +405,11 @@ Against the 12 px budget of §3 this is a 40× margin. Pairwise conditioning:
 | 1.7–2.5 | 8 | 1.9 px | 8/8 |
 | > 2.5 | 7 | 0.5 px | 7/7 |
 
-### 6.3 Pool: a fish-shaped object that moves
+### 6.4 Pool: a fish-shaped object that moves
 
 The same dive carries a second laser session on a fish decoy (312.5 mm, measured)
-hanging on a line, free to yaw: 13 frames, 0.8–3.3 m. Masks come from a text-prompted
+hanging on a line, free to yaw: 13 frames, 0.8-3.3 m, the dots spanning 2.9-39.6 degrees
+of field. Masks come from a text-prompted
 segmentation model ("fish") on a crop centred on the dot -- the same backend the
 deployment already runs for head/tail keypointing, so it is not a new dependency here,
 though it is a heavy one for a method sold on deployability. Two lighter attempts failed
@@ -383,19 +419,28 @@ underwater white balance leaves the flank and the water the same hue. A fish wil
 the same problem. Comparing the two size
 measures:
 
-| size measure | `p_D` vs reference | leave-one-out sd | recovered size |
+| size measure | `p_D` vs reference | leave-one-out sd | size *by-product* |
 |---|---|---|---|
-| **body height at the dot** | **3.8 px** | 2.1 px | — |
-| snout-to-tail length | 12.3 px | 1.7 px | 274 mm vs 312.5 (−12%) |
+| **body height at the dot** | **3.8 px** | 2.1 px | 99.7 mm (depth) |
+| snout-to-tail length | 12.3 px | 1.7 px | 274 mm (length) |
 
 Height closes the beam inside budget; length fails exactly as predicted, because the far
 frames are the oblique ones. Per-frame scatter is 10-16 px -- the decoy swings -- yet the
 intercept is stable to 2 px: the line fit averages pose noise.
 
-**The recovered size is a by-product, and it is not the calibration.** The decoy's body
-height, measured afterwards with a tape, is 106.1 mm; the estimator returns 99.7 mm from
-height at the dot and 112.4 mm from maximum body height. Neither is the calibration, and
-the 6% is not a calibration error, because the estimator is **exactly invariant to a
+**The size by-product is the method's noisiest output, and it is not how the pipeline
+measures anything.** This needs saying because the paper reports two very different numbers
+for the decoy's length. The **by-product** is the single parameter `k = |O|/slope` fitted
+across all frames: 274 mm, 12% short. The **measurement** is the per-frame reconstruction
+`l * Z` aggregated at p90, which is what a deployment actually computes and what section
+6.2 reports: 311.2 mm, 0.4% short. In an exact model the two coincide; they differ here
+because the model is not exact and a least-squares slope is a far noisier estimator than a
+robust aggregate of per-frame products. Validate the pipeline on the measurement, never on
+the by-product.
+
+The same gap explains the depth numbers. The decoy's body height, calipered afterwards, is
+106.1 mm; the by-product returns 99.7 mm from height at the dot and 112.4 mm from maximum
+body height. Neither is a calibration error, because the estimator is **exactly invariant to a
 constant scale error in the size measurement**: in `p = p_D + (|O|/k) * l`, replacing `l`
 by `c*l` for any constant `c` leaves the intercept `p_D` untouched and moves only the
 slope, hence only the recovered `k`. Scaling every measured size by 1.06, 0.85 or 2.5
@@ -407,12 +452,12 @@ What is *not* absorbed is a **range-correlated** bias, and that distinction turn
 matter more than goodness of fit. Maximum body height is the more self-consistent measure
 -- 5.8 px fit residual against 15.6 px, because the dot wanders over 0.107 of the body
 length between frames and takes the local height with it -- but it is the *worse*
-calibrator, giving +5.1% median and 11.4% worst end to end against +2.4% and 3.6% for
+calibrator, giving +5.1% median and 11.4% worst end to end against +2.2% and 3.5% for
 height at the dot (section 6.1). A size measure that is consistent frame to frame is not
 thereby free of a trend with range, and only the trend reaches the vanishing point. Fit
 residual is therefore not a model-selection criterion here; a held-out target is.
 
-### 6.4 An independent production corpus
+### 6.5 An independent production corpus
 
 We re-ran the estimator on 2,927 frames over 32 dives from an independent deployment of
 the same measurement pipeline, where per-dive calibrations had been produced
@@ -437,7 +482,7 @@ On a slab, spending no known length, the estimator reproduces a known-length
 calibration to 0.003°. On solid models it is biased, and the bias orders by the
 object's thickness.
 
-### 6.5 The failure mode, stated
+### 6.6 The failure mode, stated
 
 The bias is half-thickness parallax. The dot lands on a solid object's **flank** while
 the landmarks used for size lie in its **midplane**, so measured size carries a `b/z`
@@ -503,7 +548,7 @@ useful as a branch-resolver and an outlier gate.
   across a handling event, inside the 15 mm budget but not negligible at a tighter one.
 - **Range spread is required, and we have not measured how often it occurs.** A dive whose
   objects were all photographed at one range cannot be calibrated this way; section 6.2
-  shows conditioning becoming reliable past a range ratio of about 1.3. Our pool sessions
+  shows conditioning becoming reliable past a range ratio of about 1.3 (section 6.3). Our pool sessions
   were arranged to span 1.1-4.5 m. Whether an unscripted survey dive supplies one rigid
   object at two clearly separated ranges is a protocol question we state rather than
   answer, and it is the main obstacle to deploying this unsupervised.
