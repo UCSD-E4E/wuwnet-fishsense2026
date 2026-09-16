@@ -35,10 +35,12 @@ advantages are calibration noise (2.1× worse in water) and the removal of the
 in-water session entirely.
 
 End to end -- camera calibrated in air, laser calibrated from a moving fish decoy, both
-then used to measure a 546 mm target that appears in neither calibration -- the
+then used to measure a 549 mm target held out of the laser calibration -- the
 reference-free pipeline reads **+2.2% median, 3.5% worst case** over 1.1-4.5 m, against
 **-5.4% median and 15.8% worst** for the same rig with no per-dive laser calibration, and
-**-0.3%** for a conventional slate calibration scored in-sample. Component-wise, the
+**-0.3%** for a conventional slate calibration scored in-sample. That experiment isolates
+angle, which is what drifts, and is blind to absolute scale by construction; scale is
+tested separately against an independently calipered object and comes back to **-0.4%**. Component-wise, the
 estimator recovers the beam direction to 0.009 deg against a slate reference, and on 2,927
 frames of an independent production corpus it reproduces a known-length calibration to
 0.003 deg (median, 10 dives) where the reference object is a slab. We give the failure
@@ -82,8 +84,10 @@ This paper removes both references. Our contributions are:
    to other housings; we say so explicitly in section 5.3 rather than let the pairing
    imply otherwise.
 4. **An end-to-end demonstration**: both halves calibrated with no in-water reference,
-   then used to measure a target held out of both, at +2.2% median against -5.4% for the
-   same rig uncalibrated (section 6.1).
+   then used to measure a target held out of the laser calibration, at +2.2% median against
+   -5.4% for the same rig uncalibrated -- with an explicit account of what that experiment
+   can and cannot see (section 6.1), and a separate absolute-scale check against a
+   calipered object at -0.4% (section 6.2).
 5. **Validation on an independent production corpus** of 2,927 frames over 32 dives,
    and the estimator's one systematic failure mode (section 6).
 6. **Three negative results** that constrain the design space: the flat port cannot
@@ -594,9 +598,11 @@ size of whatever the dot lands on -- the dive's own subjects, of unknown size.
 End to end, with no reference object ever entering the water, the rig measures a held-out
 549 mm target to +2.2% median and 3.5% worst case across 1.1-4.5 m -- inside a 5%
 requirement on every frame -- where the same rig without a per-dive laser calibration reads
--5.4% median and 15.8% worst. Component-wise the estimator recovers the beam to 0.009 deg
-in a pool and to 0.003 deg on a production corpus where the reference object is a slab. Where it fails, it fails for a stated reason with a stated
-remedy.
+-5.4% median and 15.8% worst. That comparison isolates the angular calibration, which is
+what drifts between dives; absolute scale, tested separately against a calipered object,
+comes back within 0.4%. Component-wise the estimator recovers the beam to 0.009 deg in a
+pool and to 0.003 deg on a production corpus where the reference object is a slab. Where
+it fails, it fails for a stated reason with a stated remedy.
 
 [TODO: implications for citizen-science deployment; future work — dome ports, in-situ
 salinity, bending bodies.]
