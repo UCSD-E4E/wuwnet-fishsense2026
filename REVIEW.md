@@ -274,3 +274,101 @@ B1 and A1 are both fixed. The headline B1 produced (+2.4% against -5.7% uncalibr
 met on every frame) is stronger than what the draft led with before, and stating A1's
 limitation made section 5 more general rather than less. The top remaining item is the related-work section, which must engage Luczynski's own evaluation directly because the SVP comparison
 is the paper's most contested claim.
+
+---
+
+# Round 2 — 2026-09-15
+
+Re-read after the A1/B1/B2/B5/C1 fixes. The paper is much stronger and the old items stay
+closed. This round found one thing that outranks anything in Round 1, because it concerns
+what the headline experiment actually measures.
+
+## H1. Section 6.1 does not test absolute scale, and the paper implies it does
+
+The end-to-end experiment reads: calibrate the camera in air on the board, take `|O|` from
+a garage beam fit that is posed against the board, calibrate the laser from the decoy, then
+measure **the board's** 549 mm span. The scale chain and the ground truth are the same
+object.
+
+Tested directly by scaling the assumed board pitch and re-running everything:
+
+| assumed board scaled by | `\|O\|` recovered | end-to-end error |
+|---|---|---|
+| 0.95 | 98.98 mm | **+2.24%** |
+| 1.00 | 104.19 mm | **+2.24%** |
+| 1.05 | 109.40 mm | **+2.24%** |
+| 1.10 | 114.61 mm | **+2.24%** |
+
+Not approximately invariant — *exactly* invariant across a 15% swing. A board-scale error
+propagates into `|O|`, hence into every range, hence into the measured span, and cancels
+against a ground truth that scaled with it.
+
+This is not a flaw in the method. It is a flaw in the claim. What section 6.1 measures is
+the laser's **angular** calibration and the refraction correction — which is the right
+target, since angle is what drifts between dives and scale is not — but a reader given
+"measures a held-out 549 mm target to +2.2%" will take it as a metric accuracy result, and
+it is not one. The fix is a sentence saying what is and is not under test, plus H2.
+
+Note also that "held out of both calibrations" is true of the *laser* calibration only. The
+board is the object the camera was calibrated on and the source of `|O|`'s scale. The
+phrase oversells.
+
+## H2. The absolute-scale test exists, passes, and is missing from the paper
+
+The decoy was calipered independently of the board: 312.5 mm long, 106.1 mm deep. Running
+the reference-free pipeline and reading the decoy's own metric length back gives
+
+**311.2 mm (p90 over 13 frames) against 312.5 calipered — −0.4%.**
+
+p90 rather than mean because yaw foreshortens one-sidedly, per the paper's own aggregation
+rule. That chain — calipered decoy ← ranges ← beam ← `|O|` ← garage board PnP — *does*
+respond 1:1 to a board-scale error, so unlike section 6.1 it tests absolute metric scale.
+It is the paper's only such test and it is currently absent.
+
+Adding it costs a paragraph and converts "we measured a target held out of the laser
+calibration" into "and the metric scale is independently confirmed to 0.4%".
+
+## H3. Two different numbers are both called "the decoy's length"
+
+Section 6.3 reports the length-based Tier 3 recovering **274 mm against 312.5 (−12%)**.
+H2 reports **311.2 mm (−0.4%)**. Both are correct and they are different quantities — the
+first is the estimator's single-parameter by-product `|O|/slope`, the second is the
+per-frame reconstruction `ℓ·Z` aggregated at p90 — but the paper does not distinguish them
+and a careful reader will think one of them is wrong.
+
+This also sharpens a result the paper already half-states: the by-product is the method's
+**noisiest** output, and nobody should validate the calibration against it. Say so once,
+plainly, and give both numbers with their definitions.
+
+## H4. The leave-one-out row calibrates and tests on the same object
+
+Section 6.1's leave-one-frame-out row fits the beam from nine frames of the board's
+apparent size and measures the board in the tenth. `|O|` pins absolute scale so it is not
+circular in the strong sense, but a range-correlated error in the board's apparent size
+produces a compensating range error that partly cancels in the measurement — the same
+mechanism H1 describes, one level down. It should be labelled the way the conventional row
+already is, as an optimistic bound on the drift-free case rather than an independent result.
+
+## What I checked and found sound
+
+- The C1 reconciliation holds: Pinax residual 0.37 px at the centre, 0.46 px at 1800 px,
+  flat enough that no corner blow-up exists to appeal to.
+- The decoy session really does span 2.9–39.6 degrees of field, so the port-independence
+  and field-coverage claims are supported by the data behind the headline.
+- The scale-invariance argument of section 6.3 is exact, not approximate; I re-derived it
+  and it holds for any constant factor.
+- The end-to-end result is stable across all three board geometries tried (±0.5 pp).
+
+## Priority now
+
+| # | fix | cost |
+|---|---|---|
+| 1 | State what section 6.1 tests and does not (H1) | an hour |
+| 2 | Add the absolute-scale check against the calipered decoy (H2) | an hour |
+| 3 | Distinguish the two decoy-length numbers (H3) | 20 minutes |
+| 4 | Label the leave-one-out row as optimistic (H4) | 10 minutes |
+| 5 | Write related work, engaging Luczynski's evaluation directly | a day |
+| 6 | Figures, then ACM LaTeX | — |
+
+Items 1–4 are all corrections to what the paper *claims*, not to what it did, and together
+they take an afternoon. After them the only substantive gap is related work.
