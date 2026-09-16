@@ -300,3 +300,30 @@ def test_layered_port_works_through_forward_projection():
         assert field_angle(water_radius(alpha, z, port), z, port) == pytest.approx(
             alpha, abs=1e-9
         )
+
+
+# --- the board is not square -----------------------------------------------
+
+def test_board_object_points_use_the_measured_anisotropic_pitch():
+    """The E4E board's two pitches differ by 1.08%; a scalar cannot express that.
+
+    Calipered spans: 548.75 mm over the 13 pitches of the long axis, 384.0 mm over
+    the 9 of the short. Guarding it because the whole fx/fy story turns on it, and
+    because a well-meaning simplification back to one number would be silent.
+    """
+    from fishsense_wuwnet.dataset import (
+        NOMINAL_SQUARE_SIZE_M,
+        SQUARE_PITCH_M,
+        board_object_points,
+    )
+
+    long_pitch, short_pitch = SQUARE_PITCH_M
+    assert short_pitch / long_pitch == pytest.approx(1.0108, abs=1e-4)
+    assert long_pitch > NOMINAL_SQUARE_SIZE_M and short_pitch > NOMINAL_SQUARE_SIZE_M
+
+    objp = board_object_points()
+    assert objp[:, 0].max() == pytest.approx(0.54875, abs=1e-9)
+    assert objp[:, 1].max() == pytest.approx(0.384, abs=1e-9)
+
+    isotropic = board_object_points(square=NOMINAL_SQUARE_SIZE_M)
+    assert isotropic[:, 0].max() == pytest.approx(0.546, abs=1e-9)

@@ -41,7 +41,32 @@ GARAGE_DIR = DATA_ROOT / "2024.05.01.FishSense.Chris Garage"
 POOL_DIR = DATA_ROOT / "2024.05.01.FishSense.Chris Pool"
 
 PATTERN = (14, 10)  # inner corners
-SQUARE_SIZE_M = 0.042
+
+#: Nominal pitch the board was *specified* at. Kept only so results computed against
+#: it can be reproduced; it is not the board.
+NOMINAL_SQUARE_SIZE_M = 0.042
+
+#: Measured pitch of the physical E4E board used for the 2024-05-01 sessions, from
+#: calipered corner-to-corner spans: 548.75 mm over the 13 pitches of the long axis
+#: and 384.0 mm over the 9 of the short one.
+#:
+#: **The board is not square.** The two pitches differ by 1.08%, and both run over the
+#: nominal 42.0 mm -- by 0.50% and 1.59%. That is ordinary for a printed target: a
+#: sheet fed through a printer scales differently along the feed axis than across it,
+#: and the error is fixed to the sheet.
+#:
+#: It is worth stating why this is not a footnote. Fitted intrinsics absorb it: with a
+#: square object model this board makes `calibrateCamera` return fx/fy = 0.9931 on an
+#: in-air session, and the same anisotropy appears across all seven cameras of the
+#: production fleet (0.99141 +- 0.00044) because they share the target design, not a
+#: sensor. Feeding the measured pitches back moves the fit to fx/fy = 1.0038 and
+#: improves the residual. A single scalar square size cannot express any of this --
+#: which is a limitation of every calibration pipeline here that takes one.
+SQUARE_PITCH_M = (0.54875 / 13, 0.384 / 9)  # (long axis, short axis)
+
+#: Deprecated alias. Prefer `SQUARE_PITCH_M`; this is the isotropic mean and exists
+#: only for code that still wants one number.
+SQUARE_SIZE_M = float(np.mean(SQUARE_PITCH_M))
 
 # (directory, first frame, last frame) -- inclusive, by the NNNN in PxxxNNNN.JPG.
 SESSIONS = {
@@ -71,11 +96,18 @@ def session_frames(session: str) -> list:
     )
 
 
-def board_object_points(pattern=PATTERN, square=SQUARE_SIZE_M) -> np.ndarray:
-    """Planar board corner coordinates in metres, shape ``(cols*rows, 3)``, z = 0."""
+def board_object_points(pattern=PATTERN, square=SQUARE_PITCH_M) -> np.ndarray:
+    """Planar board corner coordinates in metres, shape ``(cols*rows, 3)``, z = 0.
+
+    `square` is the measured, **anisotropic** pitch ``(long_axis, short_axis)`` by
+    default; pass a single float for an isotropic board. Passing
+    ``NOMINAL_SQUARE_SIZE_M`` reproduces results computed before the board was
+    calipered -- see `SQUARE_PITCH_M` for why that is not the same thing.
+    """
     cols, rows = pattern
+    pitch = np.broadcast_to(np.asarray(square, dtype=float).ravel(), (2,))
     objp = np.zeros((cols * rows, 3), np.float32)
-    objp[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2) * float(square)
+    objp[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2) * pitch
     return objp
 
 
