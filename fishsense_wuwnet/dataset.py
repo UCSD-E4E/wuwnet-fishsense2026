@@ -47,22 +47,32 @@ PATTERN = (14, 10)  # inner corners
 NOMINAL_SQUARE_SIZE_M = 0.042
 
 #: Measured pitch of the physical E4E board used for the 2024-05-01 sessions, from
-#: calipered corner-to-corner spans: 548.75 mm over the 13 pitches of the long axis
-#: and 384.0 mm over the 9 of the short one.
+#: calipered **corner-to-corner** spans: 549 mm over the 13 pitches of the long axis
+#: and 379 mm over the 9 of the short one.
 #:
-#: **The board is not square.** The two pitches differ by 1.08%, and both run over the
-#: nominal 42.0 mm -- by 0.50% and 1.59%. That is ordinary for a printed target: a
-#: sheet fed through a printer scales differently along the feed axis than across it,
-#: and the error is fixed to the sheet.
+#: The board is very nearly square -- the two pitches differ by 0.28% -- and both run
+#: about 0.55% over the nominal 42.0 mm. Corner-to-corner is the span these object
+#: points represent; an earlier inner-edge-to-inner-edge reading gave 548.75 / 384.0
+#: and is superseded.
 #:
-#: It is worth stating why this is not a footnote. Fitted intrinsics absorb it: with a
-#: square object model this board makes `calibrateCamera` return fx/fy = 0.9931 on an
-#: in-air session, and the same anisotropy appears across all seven cameras of the
-#: production fleet (0.99141 +- 0.00044) because they share the target design, not a
-#: sensor. Feeding the measured pitches back moves the fit to fx/fy = 1.0038 and
-#: improves the residual. A single scalar square size cannot express any of this --
-#: which is a limitation of every calibration pipeline here that takes one.
-SQUARE_PITCH_M = (0.54875 / 13, 0.384 / 9)  # (long axis, short axis)
+#: **Do not use this to settle the fx/fy question.** With a square object model an
+#: in-air fit returns fx/fy = 0.9931, and all seven cameras of the IMWUT production
+#: fleet return 0.99141 +- 0.00044. Backing this board out of that fit leaves a *larger*
+#: camera anisotropy, 0.97%, not a smaller one -- so on this reading the target is not
+#: the cause. But the conclusion is not stable at the precision a rule affords: the short
+#: axis is only 9 pitches, so 1 mm of reading error is 0.26% of it, a reading of 377.5 mm
+#: would make the camera exactly square, and two careful attempts at this span have
+#: differed by 5 mm. The measurement cannot decide it either way.
+#:
+#: What can: one calibration session shot in portrait. A camera-side anisotropy is fixed
+#: in sensor coordinates and is unchanged by rotating the camera; a target-side one is
+#: fixed to the board and inverts about 1.0. That test compares the camera to itself and
+#: depends on no length measurement at all.
+#:
+#: What *is* settled either way: a single scalar square size cannot express an
+#: anisotropic target, which is a limitation of every calibration path here that takes
+#: one, production included.
+SQUARE_PITCH_M = (0.549 / 13, 0.379 / 9)  # (long axis, short axis)
 
 #: Deprecated alias. Prefer `SQUARE_PITCH_M`; this is the isotropic mean and exists
 #: only for code that still wants one number.
