@@ -328,3 +328,62 @@ def test_board_object_points_use_the_measured_pitch():
 
     isotropic = board_object_points(square=NOMINAL_SQUARE_SIZE_M)
     assert isotropic[:, 0].max() == pytest.approx(0.546, abs=1e-9)
+
+
+# --- the dome port, which is the state of practice -------------------------
+
+def test_a_concentric_dome_is_optically_absent():
+    """The defining property: pupil at the centre of curvature bends nothing.
+
+    Every ray leaves along a radius and meets both surfaces at normal incidence,
+    so gamma == alpha exactly and an in-air calibration needs no correction at
+    all. This is the benchmark the flat port has to justify itself against, so
+    it is asserted to machine precision rather than to a tolerance.
+    """
+    from fishsense_wuwnet.refraction import DomePort, dome_exit_ray
+
+    dome = DomePort(radius=0.050, thickness=0.005, n_glass=1.49, n_water=SWEET_WATER)
+    alpha = np.radians([0.0, 5.0, 15.0, 30.0, 41.4])
+    r_exit, gamma = dome_exit_ray(alpha, dome)
+
+    assert gamma == pytest.approx(alpha, abs=1e-12)
+    # and it leaves at the outer radius, along that same radius
+    assert r_exit == pytest.approx((0.050 + 0.005) * np.sin(alpha), abs=1e-12)
+
+
+def test_dome_deviation_grows_with_decentring_and_field_angle():
+    from fishsense_wuwnet.refraction import DomePort, dome_exit_ray
+
+    alpha = np.radians(30.0)
+    previous = 0.0
+    for decentre in (0.002, 0.005, 0.010):
+        dome = DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=decentre)
+        _, gamma = dome_exit_ray(alpha, dome)
+        deviation = abs(gamma - alpha)
+        assert deviation > previous
+        previous = deviation
+    # on axis there is nothing to bend, whatever the decentring
+    _, gamma_axis = dome_exit_ray(0.0, DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=0.010))
+    assert gamma_axis == pytest.approx(0.0, abs=1e-12)
+
+
+def test_a_misaligned_dome_still_beats_an_uncorrected_flat_port():
+    """Why a dome is the state of practice: even misaligned it is far better.
+
+    At 30 degrees off axis an uncorrected flat port is 7.97 degrees wrong. A dome
+    decentred by 5 mm -- a poor alignment, a tenth of its own radius -- is 0.74
+    degrees wrong, and one decentred by 10 mm is 1.48. The flat port's error does
+    not depend on assembly at all; the dome's is entirely assembly, and goes to
+    zero with it.
+    """
+    from fishsense_wuwnet.refraction import DomePort, dome_exit_ray
+
+    alpha = np.radians(30.0)
+    _, gamma_flat = exit_ray(alpha, FlatPort(0.001, 0.006, 1.49, SWEET_WATER))
+    flat_error = abs(gamma_flat - alpha)
+
+    _, gamma_5mm = dome_exit_ray(alpha, DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=0.005))
+    assert abs(gamma_5mm - alpha) < 0.1 * flat_error
+
+    _, gamma_10mm = dome_exit_ray(alpha, DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=0.010))
+    assert abs(gamma_10mm - alpha) < 0.2 * flat_error

@@ -111,6 +111,88 @@ def exit_ray(alpha, port) -> Tuple[np.ndarray, np.ndarray]:
     return r_exit, gamma
 
 
+@dataclass(frozen=True)
+class DomePort:
+    """A spherical dome, the alternative to a flat pane and the state of practice.
+
+    A dome is the reason flat-port refraction is a choice rather than a fact. If
+    the camera's entrance pupil sits exactly at the dome's centre of curvature,
+    every camera ray leaves along a radius, meets both glass surfaces at normal
+    incidence, and is not bent at all: the housing is optically absent and an
+    in-air calibration is valid underwater with no correction. `decentre` is the
+    distance by which the pupil misses that centre, and it is the whole story --
+    the deviation scales with it and vanishes with it.
+
+    That ideal is hard to buy. The pupil's position is a property of the lens and
+    moves with zoom and focus, domes are sold in discrete sizes with discrete
+    extension rings, and the alignment cannot be seen from outside the housing.
+    A dome also forms a *virtual image* a short way in front of the port, so the
+    lens must focus far closer than the subject, which is why dome users fit
+    close-up dioptres and stop down.
+
+    `radius` is the inner radius; `thickness` the glass. `decentre` is positive
+    when the centre of curvature lies in front of the pupil.
+    """
+
+    radius: float
+    thickness: float
+    n_glass: float
+    n_water: float
+    decentre: float = 0.0
+    n_air: float = 1.0
+
+
+def _refract(direction, normal, eta):
+    """Vector Snell. `normal` points along the outgoing side; `eta` = n_from / n_to."""
+    cos_i = np.sum(direction * normal, axis=-1, keepdims=True)
+    k = 1.0 - eta * eta * (1.0 - cos_i * cos_i)
+    if np.any(k < 0):
+        raise ValueError("total internal reflection in the port")
+    return eta * direction + (np.sqrt(k) - eta * cos_i) * normal
+
+
+def dome_exit_ray(alpha, port: DomePort) -> Tuple[np.ndarray, np.ndarray]:
+    """Where a camera ray at field angle `alpha` leaves a dome, and its angle in water.
+
+    Returns ``(r_exit, gamma)`` to match `exit_ray`, so the two port types are
+    interchangeable in a pipeline. Traced as vectors through both spherical
+    surfaces rather than in closed form, because the closed form is only tidy in
+    the concentric case -- which is exactly the case that needs no tracing.
+
+    For ``decentre == 0`` this returns ``gamma == alpha`` identically: the dome is
+    transparent, and that is the benchmark a flat port has to earn its place
+    against.
+    """
+    alpha_in = np.asarray(alpha, dtype=float)
+    alpha = np.atleast_1d(alpha_in)
+    u = np.stack([np.sin(alpha), np.cos(alpha)], axis=-1)
+    centre = np.array([0.0, float(port.decentre)])
+
+    # first surface: the inner sphere about the centre of curvature
+    u_dot_c = u @ centre
+    disc = u_dot_c ** 2 - centre @ centre + port.radius ** 2
+    if np.any(disc < 0):
+        raise ValueError("ray misses the dome; check radius against decentre")
+    p1 = (u_dot_c + np.sqrt(disc))[..., None] * u
+    n1 = (p1 - centre) / port.radius
+    v = _refract(u, n1, port.n_air / port.n_glass)
+
+    # second surface: the outer sphere, same centre
+    w = p1 - centre
+    v_dot_w = np.sum(v * w, axis=-1)
+    outer = port.radius + port.thickness
+    s2 = -v_dot_w + np.sqrt(v_dot_w ** 2 + outer ** 2 - port.radius ** 2)
+    p2 = p1 + s2[..., None] * v
+    n2 = (p2 - centre) / outer
+    e = _refract(v, n2, port.n_glass / port.n_water)
+
+    gamma = np.arctan2(e[..., 0], e[..., 1])
+    r_exit = p2[..., 0]
+    if alpha_in.ndim == 0:  # match exit_ray: a scalar in, a scalar out
+        return r_exit[0], gamma[0]
+    return r_exit, gamma
+
+
 def water_radius(alpha, z, port: FlatPort):
     """Radius from the optical axis at which the ray at `alpha` reaches depth `z`."""
     r_exit, gamma = exit_ray(alpha, port)
