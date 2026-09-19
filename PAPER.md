@@ -60,14 +60,21 @@ extrinsics — must be known. Neither survives a dive unchanged: the port is a
 refractive element whose effect depends on the water, and the laser is a mechanical
 assembly that moves.
 
-That the extrinsics move is the established premise of this work rather than a
-finding of it. The deployed procedure already recalibrates the laser **every dive**,
-against a dive slate: a known planar target, photographed several times per dive,
-whose pose places each dot in three dimensions so a line can be fitted through them.
-How far the mount moves, and why, is the subject of separate work and is not measured
-here. What matters for this paper is only that a per-dive calibration is required, and
-that the slate is what makes it expensive and puts it out of reach of an untrained
-operator.
+The laser's half of that is worth stating precisely, because it is the whole reason
+the second half of this paper exists. A bench calibration does not survive to the dive:
+in section 6.1 we measure a rig against a target of known size using its own extrinsics
+from 48 minutes earlier, and it reads **5.4 % short at the median and 15.8 % at worst**,
+missing a 5 % tolerance on six frames in ten. So the laser must be recalibrated in the
+water, every dive — which is what the deployed procedure does, against a dive slate: a
+known planar target, photographed several times per dive, whose pose places each dot in
+three dimensions so a line can be fitted through them. The slate is what makes that
+expensive and puts it out of reach of an untrained operator.
+
+We take the movement itself as given and do not characterise it. How far the mount
+moves, on what timescale, and with how many degrees of freedom is a question about the
+hardware, needs the per-dive extrinsics of many units rather than one dive's dots, and
+is the subject of separate work. Nothing here depends on the answer: the method treats
+the previous calibration as unavailable regardless of why.
 
 This paper removes both references. Our contributions are:
 
