@@ -206,30 +206,61 @@ def local_length_error(corners, directions, object_points, pairs):
 
 
 def differential_length_error(
-    model, reference, principal_point, radii, laser_radius, azimuth=0.0
+    model, reference, principal_point, radii, laser_radius, azimuth=0.0, extent="radial"
 ):
     """Relative length error from magnification differing across the field.
 
     `model` and `reference` map pixel coordinates to normalised directions.
-    `reference` stands in for the truth — on real data the in-water calibration is
+    `reference` stands in for the truth -- on real data the in-water calibration is
     the best empirical description of what the camera actually does underwater, so
     it is the natural choice, with the caveat that it then scores zero by
     construction and cannot show its own error.
 
-    Range is taken at `laser_radius` (where the dot actually lands) and length at
-    each radius in `radii`. Returns relative length error, as a fraction.
+    Range is taken at `laser_radius`, where the dot lands, through the *position*
+    magnification: what the model does to the dot's own direction is what moves the
+    triangulated depth.
+
+    Length is taken at each radius in `radii` through the magnification **along the
+    fish's own extent**, which is not the same quantity and is why `extent` exists.
+    A flat port's magnification is rotationally symmetric but not isotropic: a span
+    lying along the radius is stretched by `d(tan gamma)/d(tan alpha)`, a span across
+    it by `tan gamma / tan alpha`, and off axis those differ by about a factor of
+    three. A horizontally-held fish meets the first case at the left and right of the
+    frame and the second at the top and bottom, so one number per field radius
+    describes neither. Pass ``extent="radial"`` for the worse case, ``"tangential"``
+    for the better one.
+
+    Returns relative length error, as a fraction.
     """
+    if extent not in ("radial", "tangential"):
+        raise ValueError(f"extent must be 'radial' or 'tangential', not {extent!r}")
     principal_point = np.asarray(principal_point, dtype=float)
     radii = np.asarray(radii, dtype=float)
 
-    def magnification(r):
+    def mapped_radius(r, fn):
         pixels = principal_point + np.column_stack(
             [r * np.cos(azimuth), r * np.sin(azimuth)]
         )
-        return np.linalg.norm(model(pixels), axis=1) / np.maximum(
-            np.linalg.norm(reference(pixels), axis=1), 1e-12
-        )
+        return np.linalg.norm(fn(pixels), axis=1)
 
-    at_field = magnification(radii)
-    at_laser = float(magnification(np.array([laser_radius]))[0])
+    def position_mag(r):
+        return mapped_radius(r, model) / np.maximum(mapped_radius(r, reference), 1e-12)
+
+    def extent_mag(r):
+        if extent == "tangential":
+            # A span perpendicular to the radius scales as the radius itself does.
+            return position_mag(r)
+        # A span along the radius scales as the derivative of the mapping.
+        # Central difference, with the step scaled to the radius: a fixed
+        # absolute step is ill-conditioned near the axis and wasteful far from
+        # it, and a one-sided difference leaves first-order error that shows up
+        # as a spurious few-parts-in-1e10 offset where the answer should be
+        # exactly zero.
+        step = np.maximum(np.abs(r), 1.0) * 1e-4
+        d_model = mapped_radius(r + step, model) - mapped_radius(r - step, model)
+        d_reference = mapped_radius(r + step, reference) - mapped_radius(r - step, reference)
+        return d_model / np.where(np.abs(d_reference) > 1e-15, d_reference, 1e-15)
+
+    at_field = extent_mag(radii)
+    at_laser = float(position_mag(np.array([laser_radius]))[0])
     return at_field / at_laser - 1.0

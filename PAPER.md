@@ -197,16 +197,27 @@ so it is small: 0.37% uncorrected on a 297 mm fish.
 The **differential** error is the difference in magnification between the fish's
 field position and the laser dot's. It is first order and it dominates:
 
-| fish field radius | uncorrected | Pinax |
-|---|---|---|
-| 500 px | +1.3% | +0.9% |
-| 1000 px | +4.1% | +1.9% |
-| 1500 px | +7.7% | +2.1% |
-| 2000 px | +13.0% | +2.1% |
-| 2500 px | **+20.9%** | +1.6% |
+It also depends on **how the fish is held**, which a single number per field radius
+hides. A flat port's magnification is rotationally symmetric but not isotropic: a span
+lying along the radius is stretched by the derivative of the radial mapping, a span
+across it by the mapping itself. A horizontally-held fish meets the first case at the
+left and right of the frame and the second at the top and bottom. Uncorrected, measured
+against the in-water calibration:
 
-An uncorrected flat port over-reads a fish at the frame corner by 21% and *under*-reads
-one closer to the axis than the laser dot. The sign change is as important as the
+| fish field radius | held along the radius | held across it |
+|---|---|---|
+| 500 px | +5.9% | +1.8% |
+| 1000 px | +11.7% | +5.1% |
+| 1500 px | +22.5% | +8.9% |
+| 2000 px | +40.6% | +14.4% |
+| 2500 px | **+55.6%** | +22.1% |
+
+A factor of about three between the two columns, and the same fish at the same distance
+from the centre reads differently depending only on which way it happened to be pointing.
+
+An uncorrected flat port over-reads a fish near the frame corner by tens of percent --
++55.6% along the radius, +22.1% across it -- and *under*-reads one closer to the axis
+than the laser dot. The sign change is as important as the
 magnitude: this is not a bias a single scale factor could absorb, because it depends on
 where in the frame the fish happened to be. Two images of the same fish, framed
 differently, give different lengths.
@@ -244,6 +255,23 @@ comes from blur and lost views, not from jitter on well-detected corners. Second
 operationally decisive, **the in-water session disappears**. Pinax's angular correction
 `γ = asin(sin α / n_w)` depends only on the water index; the port geometry enters only
 through a small lateral ray offset, negligible at survey range.
+
+### 4.4 A note on the corrective optic, which we do not model
+
+The reference implementation of this system does not leave the port bare. It mounts a
+Backscatter M52 Underwater 81-degree Wide Air Lens at the housing port, restoring an air
+path so the camera behaves as a pinhole again, and the companion system paper quantifies
+the failure that optic prevents rather than the accuracy it achieves -- its own figure is
+the refraction model with the index step removed, which it correctly calls close to
+tautological.
+
+**We make no claim about that optic's performance, and do not measure it.** Our
+configuration is the bare housing -- the water-to-air focal ratio we report in section 4.1
+is the signature of an uncorrected port, and would be near unity with the lens fitted --
+and our claim is about what that configuration achieves, not about what the lens fails to.
+The two are alternative paths to the same place: one buys the air path in glass, the other
+models the water. Which is preferable is a question about availability and cost for the
+people who have to assemble the rig, not about optics, and it is not settled here.
 
 ### 4.4 How a dome compares, and why accept a refractive port at all
 
