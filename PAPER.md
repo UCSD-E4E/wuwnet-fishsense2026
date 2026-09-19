@@ -245,6 +245,45 @@ operationally decisive, **the in-water session disappears**. Pinax's angular cor
 `γ = asin(sin α / n_w)` depends only on the water index; the port geometry enters only
 through a small lateral ray offset, negligible at survey range.
 
+### 4.4 How a dome compares, and why accept a refractive port at all
+
+A flat pane is not the usual choice, and the paper would be evading its own question if it
+compared only flat-port treatments. A **dome port** whose centre of curvature coincides
+with the camera's entrance pupil bends nothing: every ray leaves along a radius, meets both
+glass surfaces at normal incidence, and an in-air calibration is valid underwater with no
+correction whatsoever. That is exact, not approximate, and we assert it to machine
+precision in test rather than argue it.
+
+So a dome sets the benchmark, and what it costs is entirely assembly. Scene-direction
+error at the frame corner (41.4 degrees off axis), and the resulting range error on our
+laser geometry:
+
+| port | error at frame corner | range error, 0.5-5 m |
+|---|---|---|
+| flat pane, uncorrected | -11.87 deg | ~25% |
+| dome, concentric | **0.00 deg, exactly** | 0% |
+| dome, 2 mm decentred | +0.40 deg | ~1% |
+| dome, 5 mm decentred | +1.00 deg | **+2.4 to +2.6%** |
+| dome, 10 mm decentred | +2.00 deg | ~5% |
+| flat pane, Pinax | -- | ~0% |
+
+A dome decentred by 5 mm -- a tenth of its own radius, a poor build -- still beats an
+uncorrected pane by an order of magnitude, and its range error is nearly flat with distance
+because the decentring is angular and the laser dot sits near the axis at every range.
+
+Three reasons to accept a pane anyway, and only the third is optical. A dome wide enough
+for a wide lens is bulky, fragile and expensive. Its alignment depends on the entrance
+pupil's position, which moves with zoom and focus and cannot be inspected once the housing
+is sealed -- so its error is an assembly tolerance that differs between units and changes
+when the lens refocuses, where a pane's is a fixed function of the water index, identical
+on every unit and every dive. And a dome forms a virtual image a few centimetres in front
+of the port, so the lens must focus far nearer than the subject.
+
+The measured comparison is the one that matters for this system: **a corrected flat pane
+sits inside a realistically-built dome.** That is a stronger claim than "the correction
+recovers most of what the pane costs", and it is the reason the choice is defensible rather
+than merely forced.
+
 ## 5. The laser: reference-free per-dive calibration
 
 ### 5.1 The locus fixes two degrees of freedom for free
