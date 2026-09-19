@@ -70,12 +70,21 @@ def test_exposed_faces_exclude_the_cavity():
 
     Only the outward ray test rejects it, and getting this wrong would roughly
     double the face count and put object points on surfaces no camera can see.
+
+    The ray has to be cast from every corner of the face and not just its
+    centre. Casting from the centre alone let two faces through -- the inside
+    of one wall, whose centre ray left through a gap in the wall opposite -- and
+    they were reported as part of that opposite wall, 128 mm from its plane.
+    Nothing downstream noticed, because correspondence fits a homography per
+    wall and simply absorbed them as outliers.
     """
     faces = exposed_faces()
     sides = [f for f in faces if f.is_side]
-    assert len(faces) == 203
-    assert Counter(f.is_side for f in faces) == {True: 173, False: 30}
-    assert sorted(Counter(tuple(f.normal) for f in sides).values()) == [41, 42, 45, 45]
+    assert len(faces) == 201
+    assert Counter(f.is_side for f in faces) == {True: 171, False: 30}
+    assert sorted(Counter(tuple(f.normal) for f in sides).values()) == [40, 41, 45, 45]
+    depths = np.array([face.centre @ face.normal for face in sides])
+    assert np.abs(depths[:, None] - [48.0, 64.0, 80.0]).min(axis=1).max() < 1e-3
 
 
 def test_every_lattice_point_sits_on_a_brick_corner():
@@ -94,11 +103,9 @@ def test_the_bond_produces_tee_junctions_rather_than_saddle_points():
     """
     points = lattice_points()
     junctions = [p for p in points if p.is_junction]
-    assert len(points) == 358
-    assert len(junctions) == 248
-    tees = sum(p.is_tee for p in junctions)
-    assert tees == 240
-    assert tees / len(junctions) > 0.95
+    assert len(points) == 350
+    assert len(junctions) == 240
+    assert all(p.is_tee for p in junctions), "a running bond admits no other kind"
 
 
 def test_a_local_colour_window_cannot_locate_itself_on_the_target():

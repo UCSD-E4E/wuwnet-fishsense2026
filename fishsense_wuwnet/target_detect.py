@@ -191,9 +191,20 @@ def _wall_frame(faces: Sequence[Face]) -> Tuple[np.ndarray, np.ndarray, np.ndarr
 
 
 def _wall_groups(path: Path = MODEL_IO):
+    """Coplanar sets of side faces, keyed by normal *and* depth along it.
+
+    Grouping by normal alone is not the same thing and was quietly wrong: the
+    target is hollow, so the inner surface of one wall shares its normal with
+    the outer surface of the opposite one, 128 mm away. Correspondence fits a
+    single homography per group, which is only meaningful if the group is
+    planar, so the depth belongs in the key. It also stops this assuming the
+    target is a box -- any model's coplanar faces group correctly.
+    """
     groups = {}
     for face in exposed_faces(path, sides_only=True):
-        groups.setdefault(tuple(np.round(face.normal, 6)), []).append(face)
+        normal = tuple(np.round(face.normal, 6))
+        depth = round(float(face.centre @ face.normal), 3)
+        groups.setdefault((normal, depth), []).append(face)
     return groups
 
 
@@ -210,12 +221,18 @@ class Correspondence:
 
 
 def _wall_coordinates(faces: Sequence[Face]):
-    """Each face's visible corners in the wall's own 2D frame, plus the frame."""
+    """Each face's visible corners in the wall's own 2D frame, plus the frame.
+
+    Returned positionally rather than keyed by face, because `Face` is not
+    hashable by value and keying on `id` would bind the result to one particular
+    call of `exposed_faces` -- which fails silently, as an empty match, if the
+    caller ever rebuilds the model.
+    """
     origin, along, up = _wall_frame(faces)
-    corners = {}
+    corners = []
     for face in faces:
         local = visible_corners(face) - origin
-        corners[id(face)] = np.stack([local @ along, local @ up], axis=-1)
+        corners.append(np.stack([local @ along, local @ up], axis=-1))
     return corners, (origin, along, up)
 
 
@@ -255,9 +272,9 @@ def match(
     detected = list(quads)
     candidates = []
 
-    for normal_key, wall in _wall_groups(path).items():
+    for (normal_key, _depth), wall in _wall_groups(path).items():
         local, _ = _wall_coordinates(wall)
-        markers = [f for f in wall if f.colour in MARKER_COLOURS]
+        markers = [(i, f) for i, f in enumerate(wall) if f.colour in MARKER_COLOURS]
 
         # Both handednesses are carried all the way to the pose test, and the
         # score is not allowed to choose between them. The detector orders
@@ -269,8 +286,8 @@ def match(
         # outward normal can tell them apart.
         for flip in (1, -1):
             best_score, best_pairs = 0, []
-            for face in markers:
-                source = local[id(face)].astype(np.float32)
+            for index, face in markers:
+                source = local[index].astype(np.float32)
                 for quad in detected:
                     if quad.colour != face.colour:
                         continue
@@ -290,8 +307,8 @@ def match(
             # find near neighbours and little else; refitting on everything it
             # found and rescoring pulls in the rest.
             for _ in range(5):
-                source = np.vstack([local[id(f)] for f, _ in best_pairs]).astype(np.float32)
-                target = np.vstack([c for _, c in best_pairs]).astype(np.float32)
+                source = np.vstack([local[i] for i, _, _ in best_pairs]).astype(np.float32)
+                target = np.vstack([c for _, _, c in best_pairs]).astype(np.float32)
                 homography, _ = cv2.findHomography(source, target, cv2.RANSAC, 3.0)
                 if homography is None:
                     break
@@ -313,7 +330,7 @@ def match(
     for _, pose, pairs in candidates:
         if _pose_gap(pose, reference) > agreement_deg:
             continue
-        for face, corners in pairs:
+        for _, face, corners in pairs:
             object_points.append(visible_corners(face))
             image_points.append(corners)
             matched_faces.append(face)
@@ -369,8 +386,8 @@ def _wall_pose(pairs, normal, camera_intrinsics):
     A plane admits two poses that reproject equally well, and a reflected match
     admits a third that is simply wrong; the outward normal settles all of it.
     """
-    object_points = np.vstack([visible_corners(f) for f, _ in pairs])
-    image_points = np.vstack([c for _, c in pairs])
+    object_points = np.vstack([visible_corners(f) for _, f, _ in pairs])
+    image_points = np.vstack([c for _, _, c in pairs])
     ok, rvecs, tvecs, errors = cv2.solvePnPGeneric(
         object_points, image_points, camera_intrinsics, None, flags=cv2.SOLVEPNP_IPPE
     )
@@ -395,9 +412,9 @@ def _pose_gap(pose, reference) -> float:
 def _score(homography, wall, local, detected, centre_tolerance):
     """Face-to-quad pairings implied by a homography, with corners in order."""
     pairs = []
-    for face in wall:
+    for index, face in enumerate(wall):
         projected = cv2.perspectiveTransform(
-            local[id(face)].reshape(1, 4, 2).astype(np.float32), homography
+            local[index].reshape(1, 4, 2).astype(np.float32), homography
         ).reshape(4, 2)
         scale = np.linalg.norm(projected - projected.mean(axis=0), axis=1).mean()
         centre = projected.mean(axis=0)
@@ -412,6 +429,6 @@ def _score(homography, wall, local, detected, centre_tolerance):
             order = [int(np.argmin(cost[i])) for i in range(4)]
             if len(set(order)) != 4:
                 continue
-            pairs.append((face, quad.corners[order]))
+            pairs.append((index, face, quad.corners[order]))
             break
     return pairs

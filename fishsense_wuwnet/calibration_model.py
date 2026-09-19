@@ -270,7 +270,15 @@ def exposed_faces(path: Path = MODEL_IO, sides_only: bool = False) -> list:
                 samples = np.vstack([centre[None], centre + (corners - centre) * 0.9])
                 if _occupied(samples + normal, half, centres, rotations).any():
                     continue
-                if not _escapes(centre + normal * _EPS_MM, normal, half, centres, rotations):
+                # Every sample must escape, not just the centre. Testing the
+                # centre alone admitted faces on the *inside* of the far wall
+                # whose centre ray happened to leave through a gap in the near
+                # one -- cavity surfaces, reported as part of the opposite wall
+                # and at the wrong depth entirely.
+                if not all(
+                    _escapes(sample + normal * _EPS_MM, normal, half, centres, rotations)
+                    for sample in samples
+                ):
                     continue
                 face = Face(i, brick.colour, corners, normal)
                 if sides_only and not face.is_side:
