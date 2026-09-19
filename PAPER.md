@@ -45,7 +45,7 @@ estimator recovers the beam direction to 0.009 deg against a slate reference, an
 frames of an independent production corpus it reproduces a known-length calibration to
 0.003 deg (median, 10 dives) where the reference object is a slab. We give the failure
 mode -- a size measure that drifts with range moves the vanishing point, and no averaging
-removes it -- and three negative results, including that the flat port's own scale
+removes it -- and two negative results, including that the flat port's own scale
 signal is too small to supply range for this housing.
 
 ## 1. Introduction
@@ -60,13 +60,14 @@ extrinsics — must be known. Neither survives a dive unchanged: the port is a
 refractive element whose effect depends on the water, and the laser is a mechanical
 assembly that moves.
 
-Our measurements on a production system put numbers on the second of these. Two
-independent calibrations of the same beam, 48 minutes and one hand-carry apart,
-differ by 0.378° in direction and 2.5 mm in origin — about 5% in range. Across a
-season the spread is of order 2°. This is why the field procedure includes a dive
-slate: a known planar target, photographed several times per dive, whose pose places
-each dot in three dimensions so that a line can be fitted through them. It is
-also why the procedure is expensive, and why an untrained operator cannot run it.
+That the extrinsics move is the established premise of this work rather than a
+finding of it. The deployed procedure already recalibrates the laser **every dive**,
+against a dive slate: a known planar target, photographed several times per dive,
+whose pose places each dot in three dimensions so a line can be fitted through them.
+How far the mount moves, and why, is the subject of separate work and is not measured
+here. What matters for this paper is only that a per-dive calibration is required, and
+that the slate is what makes it expensive and puts it out of reach of an untrained
+operator.
 
 This paper removes both references. Our contributions are:
 
@@ -90,10 +91,10 @@ This paper removes both references. Our contributions are:
    calipered object at -0.4% (section 6.2).
 5. **Validation on an independent production corpus** of 2,927 frames over 32 dives,
    and the estimator's one systematic failure mode (section 6).
-6. **Three negative results** that constrain the design space: the flat port cannot
-   supply range at this housing's geometry; a one-degree-of-freedom mount prior is
-   rejected by the data; and the nominal laser axis is too loose to close the
-   calibration (§7).
+6. **Two negative results** that constrain the design space: the flat port cannot
+   supply range at this housing's geometry, and no prior on the laser mount available
+   to us closes the beam without scene content -- which is what makes the apparent-size
+   route necessary rather than merely convenient (§7).
 
 ## 2. Related work
 
@@ -629,19 +630,25 @@ range) but it sits two orders of magnitude under the model-mismatch floor for th
 housing. Frames under 0.5 m, or a deliberately loose port, would change this — the
 latter in direct tension with Pinax.
 
-**A one-degree-of-freedom mount prior is rejected.** The laser body rolls in its mount,
-which would make `D` sweep a cone of fixed half-angle about the mount axis; if true,
-the locus would close the beam with no range and no object. Fitting 114 per-dive loci
-across seven units as a closed loop gives χ² = 12 with 104 px of residual against 109
-px of spread, and an equal-weighted fit explains no more variance than a Gaussian blob
-of matched spread. Two of seven units show loop structure at 3–5σ; five do not.
+**A prior on the mount cannot replace the object.** The locus fixes two of the beam's
+four degrees of freedom, so a mount constrained to one degree of freedom would close it
+outright — no range, no object, nothing but the dots. This is the one alternative to
+section 5.2 that would need no scene content at all, so it has to be ruled out before
+the apparent-size route is justified.
 
-**The nominal axis is too loose.** The laser is designed parallel to the optical axis,
-so `D` should lie on a circle about the principal point whose radius one bench
-measurement fixes. Our in-air and in-water sessions give circle radii of 0.478° and
-0.278° — 13σ apart. Intersecting the locus with the design circle places `D` 12 px off
-at best, which is 15.6% at 4 m: over budget, with no margin. The design axis remains
-useful as a branch-resolver and an outlier gate.
+It does not survive the check. Constraining `D` to the circle the design axis implies —
+parallel to the optical axis, radius fixed by one bench measurement — places `D` 12 px
+off at best, which is 15.6 % at 4 m: over budget, with no margin. The two sessions we
+have disagree about that radius by far more than their own fit noise, so the prior is
+not merely imprecise but unsupported by the data available to us.
+
+We stop there deliberately. Establishing *how* the mount actually moves — whether its
+freedom is one degree or several, and with what distribution — is a characterisation of
+the hardware, it needs the per-dive extrinsics of many units rather than the dots of
+one dive, and it is the subject of separate work. The conclusion this paper needs is
+only the negative one: no mount prior available to us closes the beam, so the size of
+something in the scene is doing real work. The design axis remains useful within this
+paper as a branch-resolver for the locus's sign ambiguity and as an outlier gate.
 
 ## 8. Limitations
 
@@ -655,8 +662,12 @@ useful as a branch-resolver and an outlier gate.
   calibration from the same dive ten minutes and one handling event later, so the
   3.8 px includes real drift and is an upper bound, not the method's error.
 - **`|O|` is still measured once.** The method is reference-free per dive, not
-  calibration-free. `|O|` error enters range 1:1; we observe 1.2–2.5 mm of movement
-  across a handling event, inside the 15 mm budget but not negligible at a tighter one.
+  calibration-free, and `|O|` error enters range 1:1. Between our own two sessions the
+  fitted baseline differs by about a millimetre, which is inside the budget here but
+  would not be at a tighter tolerance. How stable that baseline is in general is a
+  property of the mount and is not characterised in this paper; a deployment that needs
+  it tighter should use the two-range closure of section 5, which recovers `|O|` per
+  dive instead of trusting it.
 - **Range spread is required, and we have not measured how often it occurs.** A dive whose
   objects were all photographed at one range cannot be calibrated this way; section 6.2
   shows conditioning becoming reliable past a range ratio of about 1.3 (section 6.3). Our pool sessions
