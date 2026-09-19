@@ -405,3 +405,69 @@ def test_dome_forward_projection_inverts_the_ray_trace():
     assert dome_field_angle(radius, 2.0, concentric) == pytest.approx(
         np.arctan(radius / 2.0), abs=1e-9
     )
+
+
+# --- the LEGO calibration target -------------------------------------------
+
+def test_the_calibration_target_geometry_is_exact_and_metric():
+    """The target's dimensions come from the design file, not from a ruler.
+
+    That is the point of using it: a printed board's pitch has to be measured
+    before it can be trusted, and ours could not be pinned down well enough to
+    settle its own anisotropy. Every dimension below is a whole number of LEGO
+    units, which is what makes it checkable at all.
+    """
+    from fishsense_wuwnet.calibration_model import (
+        BRICK_MM,
+        STUD_MM,
+        extent_mm,
+        load_bricks,
+        model_points,
+    )
+
+    bricks = load_bricks()
+    assert len(bricks) == 135
+    assert {b.part for b in bricks} == {"3001.dat"}  # all 2x4 bricks
+
+    # Nine courses of brick, four walls: 144 x 128 x 86.4 mm, every dimension a
+    # whole number of studs or bricks.
+    # 18 studs by 16 studs by 9 bricks. The tolerance is 1 micron, not machine
+    # epsilon: Studio writes rotations to finite precision, which leaves tens of
+    # nanometres in the extent. Every brick does sit exactly on the LEGO grid.
+    extent = extent_mm()
+    assert extent == pytest.approx([18 * STUD_MM, 16 * STUD_MM, 9 * BRICK_MM], abs=1e-3)
+
+    points = model_points()
+    assert points.shape == (8 * 135, 3)
+
+    # Four marker colours, one per wall, so a detected marker names the face.
+    markers = [b for b in bricks if b.is_marker]
+    assert len(markers) == 18
+    assert len({b.colour for b in markers}) == 4
+
+
+def test_similarity_fit_separates_shape_error_from_scale():
+    """A reconstruction is recovered up to a similarity, so the fit removes one.
+
+    What survives is shape error, which is the model-independent quantity; the
+    fitted scale is reported separately because comparing it against the scale
+    the laser supplies is what tests the metric chain.
+    """
+    from fishsense_wuwnet.calibration_model import fit_similarity, model_points
+
+    model = model_points()
+    rng = np.random.default_rng(0)
+    rotation = np.linalg.qr(rng.normal(size=(3, 3)))[0]
+    if np.linalg.det(rotation) < 0:
+        rotation[:, 0] *= -1
+    observed = 2.5 * model @ rotation.T + np.array([100.0, -20.0, 7.0])
+
+    scale, _, _, rms = fit_similarity(model, observed)
+    assert scale == pytest.approx(2.5, rel=1e-9)
+    assert rms == pytest.approx(0.0, abs=1e-6)
+
+    # A reconstruction that is wrong in shape cannot be fitted away by a scale:
+    # squashing one axis leaves a residual no similarity can absorb.
+    squashed = observed * np.array([1.0, 1.0, 0.97])
+    _, _, _, rms_squashed = fit_similarity(model, squashed)
+    assert rms_squashed > 1.0
