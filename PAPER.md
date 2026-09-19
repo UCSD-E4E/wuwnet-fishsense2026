@@ -61,9 +61,10 @@ refractive element whose effect depends on the water, and the laser is a mechani
 assembly that moves.
 
 The laser's half of that is worth stating precisely, because it is the whole reason
-the second half of this paper exists. A bench calibration does not survive to the dive:
-in section 6.1 we measure a rig against a target of known size using its own extrinsics
-from 48 minutes earlier, and it reads **5.4 % short at the median and 15.8 % at worst**,
+the second half of this paper exists. Crutchfield et al. report that the laser extrinsics
+move between dives [??], and the effect is large enough to see in a single afternoon: in
+section 6.1 we measure a rig against a target of known size using its own extrinsics from
+48 minutes earlier, and it reads **5.4 % short at the median and 15.8 % at worst**,
 missing a 5 % tolerance on six frames in ten. So the laser must be recalibrated in the
 water, every dive — which is what the deployed procedure does, against a dive slate: a
 known planar target, photographed several times per dive, whose pose places each dot in
