@@ -32,6 +32,28 @@ LDU_MM = 0.4
 STUD_MM = 8.0
 BRICK_MM = 9.6
 
+#: A brick's moulded body is narrower than the cell it occupies: LEGO holds an
+#: 8.0 mm stud *pitch* but moulds an n-stud body to 8n - 0.2 mm, so two bricks
+#: side by side leave a 0.2 mm gap. Vertically there is no such clearance --
+#: bricks stack to exactly 9.6 mm -- but the moulded edge is chamfered, so a
+#: horizontal joint also shows as a fine dark line.
+#:
+#: This is worth getting right rather than absorbing into a fudge. 0.2 mm on a
+#: 32 mm brick is 0.6 %, the same order as the printed-board tolerance this
+#: target exists to avoid, so a detector that localised *brick edges* and called
+#: them cell boundaries would reintroduce exactly the error it was meant to
+#: remove. The nominal lattice used throughout this module is the **centre** of
+#: each joint, which is unbiased for both axes: horizontally it is the middle of
+#: the 0.2 mm gap, vertically the middle of the chamfer line.
+#:
+#: The inset from the nominal cell to the *visible* face is therefore not the
+#: same on the two axes -- clearance plus chamfer across, chamfer alone up --
+#: and a detector working from visible edges has to apply both. It is a real
+#: asymmetry, not a rendering detail, and it is why `visible_inset_mm` is
+#: exported rather than left inside the renderer.
+BRICK_CLEARANCE_MM = 0.2
+CHAMFER_MM = 0.25
+
 #: The design, as committed. Studio writes several `.ldr` variants into the zip;
 #: `model.ldr` is the one it treats as current.
 MODEL_IO = Path(__file__).resolve().parent.parent / "calibration_model" / "calibration_model.io"
@@ -339,3 +361,15 @@ def lattice_points(path: Path = MODEL_IO, quadrant_mm: float = 3.0) -> list:
             )
             points.append(LatticePoint(position, normal, tuple(signature), touching))
     return points
+
+
+def visible_inset_mm() -> Tuple[float, float]:
+    """Inset from a nominal cell boundary to the brick's visible edge, ``(across, up)``.
+
+    A detector sees moulded faces, not cells. Across the wall a face stops half
+    the moulding clearance short of the cell boundary and is then chamfered;
+    up the wall the bricks touch, so only the chamfer applies. Subtracting these
+    is what turns a detected brick outline back into the lattice the object
+    points are expressed in.
+    """
+    return BRICK_CLEARANCE_MM / 2.0 + CHAMFER_MM, CHAMFER_MM
