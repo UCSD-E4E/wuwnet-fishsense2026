@@ -25,6 +25,14 @@ End to end, with nothing of known size in the water, the rig measures a held-out
 checked separately against an independently calipered object, comes back within
 0.4 %.
 
+Calibrating in air also means the target need not be a printed plane. A tower of
+2x4 bricks is exact by construction rather than by measurement, and being
+three-dimensional it breaks a degeneracy a board does not: on rendered views,
+seeded isotropic and 11 % long, `calibrateCamera` recovers a 1.09 % `fx/fy`
+anisotropy to 0.013 % from views that are never rolled -- which is the question
+§8 cannot settle from the pool data. The target is being built; nothing here has
+yet been run on a photograph of it.
+
 Two results are corrections to expectations rather than confirmations, and are
 the parts most worth reading: on geometry alone a well-fitted **in-water
 single-viewpoint calibration is indistinguishable from the Pinax model** (§4.3),
@@ -33,7 +41,7 @@ object is measured** — roughly forty times more than by dot detection.
 
 ```bash
 uv sync
-uv run pytest                                      # 62 tests
+uv run pytest                                      # 82 tests
 uv run jupyter lab                                 # refraction_analysis/
 uv run python refraction_analysis/make_figures.py  # figures/ as PDF and PNG
 ```
@@ -48,6 +56,9 @@ runs without access to the image archive. `figures/` is generated, never edited.
 | `fishsense_wuwnet/refraction.py` | flat-port and dome-port geometry, Pinax, the exact axial model |
 | `fishsense_wuwnet/pipelines.py` | the back-projections, and the two length errors that differ by ~50× |
 | `fishsense_wuwnet/laser.py` | the dot locus, and three ways to close the beam |
+| `fishsense_wuwnet/calibration_model.py` | the LEGO target's exact geometry, read from the Studio file |
+| `fishsense_wuwnet/target_render.py` | synthetic views of it, with ground truth |
+| `fishsense_wuwnet/target_detect.py` | finding it in an image, and which brick is which |
 | `refraction_analysis/` | simulation, pool validation, drift, per-dive calibration |
 | `correspondence/` | notes exchanged with the sibling papers |
 
