@@ -27,11 +27,12 @@ NOTEBOOKS = {
     "laser_per_dive.ipynb": "perdive-",
 }
 
+#: The notebooks apply the style themselves, so all this adds is the headless
+#: backend and the harvest hook.
 PREAMBLE = """
 import matplotlib
 matplotlib.use("Agg")
 from fishsense_wuwnet import figstyle
-figstyle.apply()
 figstyle.install_autosave(prefix={prefix!r})
 """
 
