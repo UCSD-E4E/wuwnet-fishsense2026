@@ -27,7 +27,9 @@ from typing import Tuple
 import numpy as np
 
 from fishsense_wuwnet.refraction import (
+    DomePort,
     FlatPort,
+    dome_exit_ray,
     exit_ray,
     pixel_to_alpha_azimuth,
     ray_directions,
@@ -86,6 +88,27 @@ def back_project_axial(
     r_exit, gamma = exit_ray(alpha, port)
     origins = np.stack(
         [r_exit * np.cos(azimuth), r_exit * np.sin(azimuth), np.full_like(r_exit, port.d2)],
+        axis=-1,
+    )
+    return origins, ray_directions(gamma, azimuth)
+
+
+def back_project_dome(
+    pixels, camera_intrinsics, dome: DomePort
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Back-project through a dome port, exactly.
+
+    Included so the figures can compare against the state of practice rather
+    than only against other flat-port treatments. A concentric dome needs no
+    correction at all, so for ``decentre == 0`` this is the in-air pinhole; what
+    it buys over `back_project_uncorrected` is the residual from a dome that was
+    not assembled perfectly, which is the only error a dome has.
+    """
+    alpha, azimuth = pixel_to_alpha_azimuth(pixels, camera_intrinsics)
+    r_exit, gamma = dome_exit_ray(alpha, dome)
+    z_exit = np.sqrt(np.maximum((dome.radius + dome.thickness) ** 2 - r_exit ** 2, 0.0)) + dome.decentre
+    origins = np.stack(
+        [r_exit * np.cos(azimuth), r_exit * np.sin(azimuth), np.broadcast_to(z_exit, r_exit.shape)],
         axis=-1,
     )
     return origins, ray_directions(gamma, azimuth)

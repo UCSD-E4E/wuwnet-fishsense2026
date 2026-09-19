@@ -387,3 +387,21 @@ def test_a_misaligned_dome_still_beats_an_uncorrected_flat_port():
 
     _, gamma_10mm = dome_exit_ray(alpha, DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=0.010))
     assert abs(gamma_10mm - alpha) < 0.2 * flat_error
+
+
+def test_dome_forward_projection_inverts_the_ray_trace():
+    """`dome_field_angle` must undo `dome_water_radius`, and be exact when concentric."""
+    from fishsense_wuwnet.refraction import DomePort, dome_field_angle, dome_water_radius
+
+    dome = DomePort(0.050, 0.005, 1.49, SWEET_WATER, decentre=0.008)
+    alpha = np.radians([2.0, 10.0, 25.0, 40.0])
+    for z in (0.8, 2.0, 4.0):
+        radius = dome_water_radius(alpha, z, dome)
+        assert dome_field_angle(radius, z, dome) == pytest.approx(alpha, abs=1e-9)
+
+    # a concentric dome is a pinhole: the field angle is just arctan(r / z)
+    concentric = DomePort(0.050, 0.005, 1.49, SWEET_WATER)
+    radius = np.array([0.1, 0.4, 1.0])
+    assert dome_field_angle(radius, 2.0, concentric) == pytest.approx(
+        np.arctan(radius / 2.0), abs=1e-9
+    )

@@ -151,24 +151,16 @@ def _refract(direction, normal, eta):
     return eta * direction + (np.sqrt(k) - eta * cos_i) * normal
 
 
-def dome_exit_ray(alpha, port: DomePort) -> Tuple[np.ndarray, np.ndarray]:
-    """Where a camera ray at field angle `alpha` leaves a dome, and its angle in water.
+def _dome_trace(alpha, port: DomePort):
+    """Trace a camera ray through both dome surfaces. Returns ``(r_exit, z_exit, gamma)``.
 
-    Returns ``(r_exit, gamma)`` to match `exit_ray`, so the two port types are
-    interchangeable in a pipeline. Traced as vectors through both spherical
-    surfaces rather than in closed form, because the closed form is only tidy in
-    the concentric case -- which is exactly the case that needs no tracing.
-
-    For ``decentre == 0`` this returns ``gamma == alpha`` identically: the dome is
-    transparent, and that is the benchmark a flat port has to earn its place
-    against.
+    Vectors rather than closed form, because the closed form is only tidy in the
+    concentric case -- which is exactly the case that needs no tracing.
     """
-    alpha_in = np.asarray(alpha, dtype=float)
-    alpha = np.atleast_1d(alpha_in)
+    alpha = np.atleast_1d(np.asarray(alpha, dtype=float))
     u = np.stack([np.sin(alpha), np.cos(alpha)], axis=-1)
     centre = np.array([0.0, float(port.decentre)])
 
-    # first surface: the inner sphere about the centre of curvature
     u_dot_c = u @ centre
     disc = u_dot_c ** 2 - centre @ centre + port.radius ** 2
     if np.any(disc < 0):
@@ -177,7 +169,6 @@ def dome_exit_ray(alpha, port: DomePort) -> Tuple[np.ndarray, np.ndarray]:
     n1 = (p1 - centre) / port.radius
     v = _refract(u, n1, port.n_air / port.n_glass)
 
-    # second surface: the outer sphere, same centre
     w = p1 - centre
     v_dot_w = np.sum(v * w, axis=-1)
     outer = port.radius + port.thickness
@@ -186,11 +177,47 @@ def dome_exit_ray(alpha, port: DomePort) -> Tuple[np.ndarray, np.ndarray]:
     n2 = (p2 - centre) / outer
     e = _refract(v, n2, port.n_glass / port.n_water)
 
-    gamma = np.arctan2(e[..., 0], e[..., 1])
-    r_exit = p2[..., 0]
+    return p2[..., 0], p2[..., 1], np.arctan2(e[..., 0], e[..., 1])
+
+
+def dome_exit_ray(alpha, port: DomePort) -> Tuple[np.ndarray, np.ndarray]:
+    """Where a camera ray at field angle `alpha` leaves a dome, and its angle in water.
+
+    Returns ``(r_exit, gamma)`` to match `exit_ray`, so the two port types are
+    interchangeable in a pipeline. For ``decentre == 0`` this returns
+    ``gamma == alpha`` identically: the dome is transparent, and that is the
+    benchmark a flat port has to earn its place against.
+    """
+    alpha_in = np.asarray(alpha, dtype=float)
+    r_exit, _, gamma = _dome_trace(alpha_in, port)
     if alpha_in.ndim == 0:  # match exit_ray: a scalar in, a scalar out
         return r_exit[0], gamma[0]
     return r_exit, gamma
+
+
+def dome_water_radius(alpha, z, port: DomePort):
+    """Radius from the optical axis at which a dome ray reaches depth `z`."""
+    r_exit, z_exit, gamma = _dome_trace(alpha, port)
+    return r_exit + (np.asarray(z, dtype=float) - z_exit) * np.tan(gamma)
+
+
+def dome_field_angle(radius, z, port: DomePort, half_fov=np.radians(80.0)) -> np.ndarray:
+    """Field angle of the camera ray imaging a water point at ``(radius, z)``.
+
+    The dome's forward projection, by bisection on `dome_water_radius`, which is
+    strictly increasing in `alpha`. The flat-port twin is `field_angle`; a
+    concentric dome makes this exactly ``arctan(radius / z)``.
+    """
+    radius = np.atleast_1d(np.asarray(radius, dtype=float))
+    z = np.broadcast_to(np.asarray(z, dtype=float), radius.shape)
+    lo = np.zeros_like(radius)
+    hi = np.full_like(radius, float(half_fov))
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        too_small = dome_water_radius(mid, z, port) < radius
+        lo = np.where(too_small, mid, lo)
+        hi = np.where(too_small, hi, mid)
+    return 0.5 * (lo + hi)
 
 
 def water_radius(alpha, z, port: FlatPort):

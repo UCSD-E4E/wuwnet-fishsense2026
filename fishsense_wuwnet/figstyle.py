@@ -57,6 +57,9 @@ PIPELINE_STYLE = {
     "In-water SVP": {"color": SERIES[1], "linestyle": DASHES[1]},
     "Pinax": {"color": SERIES[2], "linestyle": DASHES[2]},
     "Exact axial": {"color": SERIES[3], "linestyle": DASHES[3]},
+    # A different camera, not a different interpretation of ours -- slot 5 keeps
+    # it visually apart from the three flat-port treatments.
+    "Dome, 5 mm off (no correction)": {"color": SERIES[4], "linestyle": DASHES[0]},
 }
 
 
