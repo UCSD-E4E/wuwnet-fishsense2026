@@ -373,3 +373,25 @@ def visible_inset_mm() -> Tuple[float, float]:
     points are expressed in.
     """
     return BRICK_CLEARANCE_MM / 2.0 + CHAMFER_MM, CHAMFER_MM
+
+
+def visible_corners(face: Face) -> np.ndarray:
+    """A face's four moulded corners, inset from its nominal cell boundaries.
+
+    These are the object points a detector can actually be matched against: it
+    sees plastic, not cells. Note what the inset costs -- the chamfer is the
+    less certain of the two constants, and it moves every object point by about
+    a quarter of a millimetre on a 144 mm target. A detector that could see
+    *both* sides of every joint would not need either constant, because the
+    joint centre is then the midpoint of two observed edges; that is possible
+    only if no two touching faces share a colour.
+    """
+    across, up = visible_inset_mm()
+    du = (face.corners[1] - face.corners[0]) / 2.0
+    dv = (face.corners[3] - face.corners[0]) / 2.0
+    inset_u = up if abs(du[2]) > abs(du[0]) + abs(du[1]) else across
+    inset_v = up if abs(dv[2]) > abs(dv[0]) + abs(dv[1]) else across
+    du = du * (1.0 - inset_u / np.linalg.norm(du))
+    dv = dv * (1.0 - inset_v / np.linalg.norm(dv))
+    signs = np.array([[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]])
+    return face.centre + signs[:, 0:1] * du + signs[:, 1:2] * dv
