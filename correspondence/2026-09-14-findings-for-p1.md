@@ -10,7 +10,17 @@ which imports `fishsense_imwut.calibration` by `sys.path` and reads
 
 ---
 
-**1. The range-trend audit has a one-sided bias from the parallax it already documents.**
+**1. The range-trend audit has a one-sided bias from the `1/z` term it already documents.**
+
+> **Retracted in part, 2026-09-19.** This item asserted that the per-target `1/z`
+> coefficients are half-thickness parallax and used them to derive a bias in the
+> range-trend audit. Your own PAPER.md §4.3 declines that attribution, and is right to:
+> each target is measured on its own sessions, so `b` cannot be separated from those
+> sessions' residual calibration drift, and the numbers do not fit a pure thickness
+> story either -- the solid trout's `b` is about five times smaller than its 58.7 mm
+> predicts while a flat plate's is larger. The arithmetic below is unchanged and still
+> bounds the audit's exposure *if* the coefficients are taken at face value; the
+> mechanism claim is withdrawn.
 
 HANDOFF §6.4 establishes half-thickness parallax: the dot lands on a solid model's
 flank, snout and fork lie in the midplane, so `length(z) = L + b/z` with b negative
@@ -73,9 +83,12 @@ compared per dive against `fit_phi_joint`, which uses known lengths:
 | Snook | +0.100° | 1 |
 | Shark | +0.268° | 2 |
 
-The disagreement orders by thickness and your own parallax correction removes it,
-which is finding 1 seen from the other side: a scale-free estimator on *length* cannot
-distinguish a thick object from a rotated laser. On the Box — dot and landmarks
+The disagreement orders with thickness and subtracting your fitted `b/z` removes it --
+but see the retraction above: that is consistent with parallax and equally consistent
+with per-session calibration drift, and your own §4.3 declines to choose. What the
+comparison establishes without the attribution is narrower and still useful: a
+scale-free estimator on size is moved by *any* range-correlated error in the size, from
+whatever cause. On the Box — dot and landmarks
 co-planar — it reproduces the known-length calibration to 0.003°, spending nothing.
 
 What I would like your view on:

@@ -44,8 +44,8 @@ tested separately against an independently calipered object and comes back to **
 estimator recovers the beam direction to 0.009 deg against a slate reference, and on 2,927
 frames of an independent production corpus it reproduces a known-length calibration to
 0.003 deg (median, 10 dives) where the reference object is a slab. We give the failure
-mode -- objects whose surface and landmarks are not co-planar bias the estimator by their
-half-thickness -- and three negative results, including that the flat port's own scale
+mode -- a size measure that drifts with range moves the vanishing point, and no averaging
+removes it -- and three negative results, including that the flat port's own scale
 signal is too small to supply range for this housing.
 
 ## 1. Introduction
@@ -551,26 +551,37 @@ known-length fit:
 | Shark model | +0.268° | 2 |
 
 On a slab, spending no known length, the estimator reproduces a known-length
-calibration to 0.003°. On solid models it is biased, and the bias orders by the
-object's thickness.
+calibration to 0.003°. On the other targets it disagrees, and the disagreement orders
+with the targets' thickness.
 
 ### 6.6 The failure mode, stated
 
-The bias is half-thickness parallax. The dot lands on a solid object's **flank** while
-the landmarks used for size lie in its **midplane**, so measured size carries a `b/z`
-term with `b` the half thickness. A scale-free estimator operating on size cannot
-distinguish that term from a rotated laser, and will rotate the laser to cancel it.
-Applying the independently-fitted thickness correction removes the disagreement.
+A size measured off a surface the dot does not lie on carries a term in `1/z`. The dot
+lands on a solid object's **flank** while the landmarks used for size lie nearer its
+**midplane**, so the measured size is short by roughly the half thickness over the
+range. A scale-free estimator operating on size cannot distinguish such a term from a
+rotated laser, and will rotate the laser to cancel it.
 
-The requirement this imposes is sharp and easy to state: **the size fed to the
-estimator must be measured at the surface the dot lands on.** Body height at the dot
-satisfies it; snout-to-fork length of a thick object does not.
+**We do not claim the observed disagreement is that term.** The ordering is consistent
+with thickness, but each target in the corpus was measured on its own sessions, so a
+per-target `1/z` coefficient cannot be separated from whatever range dependence those
+sessions' calibrations retain -- the point that corpus's own authors make, and they
+decline the attribution for the same reason. Their fit is also quantitatively awkward
+for a pure thickness story: the solid trout's coefficient is about five times smaller
+than its measured 58.7 mm across the body predicts, while a flat plate shows a larger
+one. We report the disagreement, name the mechanism it is consistent with, and leave
+the attribution open.
 
-A corollary for the conventional pipeline: the same parallax puts a genuine positive
-range trend on thick reference objects under a *correct* calibration
-(`−b/(z_i z_j)` per frame pair), which we compute at +0.9 to +2.4 %/m for the thicker
-models in this corpus — comparable to the 2 %/m threshold used there to flag bad
-calibrations.
+What survives without the attribution is the design rule, which is what the method
+needs: **the size fed to the estimator must be measured on the surface the dot lands
+on, and must not drift with range.** Any size measure that is systematically wrong in
+a way correlated with distance -- for whatever reason -- moves the vanishing point,
+and no amount of averaging removes it. Section 6.4 gives the measured case: a size
+measure that is more self-consistent can still be the worse calibrator.
+
+Our own decoy test is not exposed to the session confound in the same way, because
+there the same object calibrates and is measured within a single session; but it is a
+single object, so it cannot separate the mechanisms either.
 
 ## 7. Negative results
 
