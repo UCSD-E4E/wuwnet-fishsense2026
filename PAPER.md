@@ -59,6 +59,17 @@ has to be a printed plane whose pitch must be measured before it can be trusted 
 be a commodity three-dimensional object, which is both more accessible and better
 conditioned than the plane it replaces.
 
+**The second consequence is that the result is not about our camera.** The model's
+parameters belong to the *housing* -- pane thickness, pane index, and the standoff
+between pane and entrance pupil -- together with the water; the camera behind the pane
+enters only through its intrinsics, which are calibrated separately and in air. The
+refraction error is therefore a function of field angle alone, identical to within 0.01 %
+across a threefold change in focal length (section 4.2). Action cameras and phones in
+dive housings sit behind flat panes just as our housing does, so the correction transfers
+to them unchanged, while the air lens it replaces does not: a corrective optic is a
+housing-specific accessory, and for most consumer housings no equivalent part exists. The
+hardware this makes measurable is considerably more accessible than the camera we tested.
+
 Our contributions are:
 
 1. **A direct, ground-truth-free measurement of flat-port refraction error**, using a
@@ -69,8 +80,9 @@ Our contributions are:
    measurable fish can be (§4.2).
 3. **A correction to the case for the analytic model**: on geometry alone a well-fitted
    in-water calibration matches it, so its advantage is the wet session it removes (§4.3).
-4. **The consequence of calibrating in air** -- centrality, and the commodity
-   three-dimensional targets it permits (§5).
+4. **The consequences of calibrating in air** -- centrality, the commodity
+   three-dimensional targets it permits, and the transfer of the whole result to any
+   flat-pane housing rather than only to ours (§5).
 5. **Two negative results** that constrain the design space: the flat port cannot supply
    range at this housing's geometry, and the cost of the port is not a property of the
    port alone but of the port together with the laser mount (§4.2, §7).
@@ -171,7 +183,17 @@ remains is prose.
    so a horizontally-held fish extends tangentially, the better case by three. A
    horizontally offset laser would put that extent radially and be roughly three times
    worse. The port's cost is a property of port *and* mount, which is actionable and, as
-   far as we know, unstated.]
+   far as we know, unstated.
+ - Close the section by tabulating against **field angle rather than pixel radius**, and
+   say why: with the pane fixed, the error is a function of field angle alone. Held at
+   f = 1329, 1751 and 2876 px the same table comes back identical to better than 0.01 %:
+       2 deg  -0.03 %    5 deg  0.40 %    8 deg  1.19 %
+      12 deg   2.87 %   20 deg  8.70 %   35 deg 33.68 %   (radial extent)
+   The envelope above is angular for the same reason -- the dot sits at atan(|O|/Z) and
+   the fish's far tip no further than atan((|O| + L/2)/Z), neither involving the lens. So
+   these numbers describe the housing, not the camera, which is what §5 then trades on.
+   Presenting the table this way costs nothing and is what makes the transfer claim
+   checkable rather than rhetorical.]
 
 ### 4.3 A correction to the case for Pinax
 
@@ -272,7 +294,35 @@ as text or evidence.
  - Status: a pilot is being shot. Report it or state it as enabled-but-untested; do not
    claim it works until it has.
  - Building and grading the target itself belongs to the deployability paper; what is
-   claimed here is the enablement.]
+   claimed here is the enablement.
+
+ SECOND ENABLEMENT: the hardware it opens up. Argument and supporting numbers settled;
+ needs writing.
+
+ - The model is parameterised by the *port*, not the camera: pane thickness, pane index,
+   standoff, water index. The camera enters only through intrinsics, which are now
+   calibrated in air by ordinary means. Nothing in the correction is specific to a TG-6.
+ - Verified, and worth stating as a result rather than an assertion: with the pane held
+   fixed, the length error is a function of field angle alone. Tabulated against field
+   angle it is identical across f = 1329, 1751 and 2876 px to better than 0.01 % --
+   -0.03 % at 2 deg, 1.19 % at 8 deg, 2.87 % at 12 deg. A wider lens does not make the
+   correction larger; it maps the same angles onto fewer pixels.
+ - Nor does a wider lens enlarge the reachable envelope of §4.2, because that envelope is
+   angular too: the dot sits at atan(|O|/Z) and the far tip of the fish no further than
+   atan((|O| + L/2)/Z), neither of which involves the lens. For our mount that is 6.7 deg
+   and 15.0 deg at 1 m, falling to 1.5 and 4.7 deg at 4.5 m -- the same envelope, and the
+   same error inside it, for any camera behind the same pane.
+ - So the conclusion transfers to action cameras and to phones in dive housings, which
+   are flat-pane almost without exception. This matters because the thing being removed
+   is the part that does *not* transfer: the M52 air lens of §4.4 is an accessory for one
+   housing, and for most consumer housings no equivalent exists. A dome is likewise a
+   specialist part (§4.5). Modelling the pane is the only one of the three routes
+   available to a diver who already owns a camera.
+ - Scope honestly. What is demonstrated is one housing; what is argued is transfer, and
+   the argument rests on the model's parameterisation plus the field-angle collapse, not
+   on having tested a second camera. Say that. The per-housing quantities -- thickness,
+   index, standoff -- still have to be obtained for each housing, and section 4.1's
+   homography-residual test is what obtains them without a reference.]
 
 ## 6. Evaluation
 

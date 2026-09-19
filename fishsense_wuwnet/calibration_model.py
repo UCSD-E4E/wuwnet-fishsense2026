@@ -144,3 +144,198 @@ def fit_similarity(source, target) -> Tuple[float, np.ndarray, np.ndarray, float
     translation = mu_t - scale * rotation @ mu_s
     residual = target - (scale * source @ rotation.T + translation)
     return scale, rotation, translation, float(np.sqrt((residual ** 2).sum(axis=1).mean()))
+
+
+# --------------------------------------------------------------------------
+# The target's exterior surface, and the feature lattice it carries.
+#
+# A checkerboard detector localises saddle points -- places where four cells
+# meet. A running-bond wall has none: every vertical joint is spanned by the
+# course above, so the joints form T-junctions instead. Running bond is not
+# negotiable, because LEGO gets its strength from exactly that overlap; a
+# stack-bond wall is a row of independent columns and falls apart in the hand.
+#
+# So the features here are seam intersections rather than saddle points. They
+# are just as good: `calibrateCamera` and `solvePnP` want correspondences, and
+# the pitch rides in the object points instead of being implied by the pattern.
+# What they are not is self-identifying, which is what the marker colours are
+# for -- see `LatticePoint.signature`.
+# --------------------------------------------------------------------------
+
+_EPS_MM = 1e-3
+
+
+@dataclass(frozen=True)
+class Face:
+    """One exposed rectangular brick face, in model millimetres."""
+
+    brick: int
+    colour: int
+    corners: np.ndarray  # (4, 3), ordered around the face
+    normal: np.ndarray  # (3,) unit, pointing out of the target
+
+    @property
+    def centre(self) -> np.ndarray:
+        return self.corners.mean(axis=0)
+
+    @property
+    def is_side(self) -> bool:
+        """True for the four walls, false for the top and bottom courses."""
+        return abs(float(self.normal[2])) < 0.5
+
+
+def _brick_frames(bricks, studs: Tuple[int, int] = BRICK_3001_STUDS):
+    half = np.array([studs[0] * STUD_MM, studs[1] * STUD_MM, BRICK_MM]) / 2.0
+    centres = np.array([b.centre for b in bricks])
+    rotations = np.array([b.rotation for b in bricks])
+    return half, centres, rotations
+
+
+def _occupied(points, half, centres, rotations) -> np.ndarray:
+    """Which of `points` lie inside any brick."""
+    local = np.einsum("nji,mj->nmi", rotations, np.atleast_2d(points))
+    local = local - np.einsum("nji,nj->ni", rotations, centres)[:, None, :]
+    return (np.abs(local) <= half + _EPS_MM).all(-1).any(0)
+
+
+def _escapes(origin, direction, half, centres, rotations) -> bool:
+    """Whether a ray leaves the target without entering a brick.
+
+    This is what separates the outer surface from the cavity: the tower is
+    hollow, so a brick's inward face has nothing immediately beyond it either,
+    and only the ray test tells the two apart. It assumes the target is not
+    concave enough to occlude itself, which holds for a tower and is checked by
+    the face counts in the tests.
+    """
+    o = np.einsum("nji,j->ni", rotations, origin) - np.einsum("nji,nj->ni", rotations, centres)
+    d = np.einsum("nji,j->ni", rotations, direction)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t0, t1 = (-half - o) / d, (half - o) / d
+    low, high = np.minimum(t0, t1), np.maximum(t0, t1)
+    parallel = np.abs(d) < 1e-12
+    low = np.where(parallel, -np.inf, low)
+    high = np.where(parallel, np.where(np.abs(o) <= half, np.inf, -np.inf), high)
+    enter, leave = low.max(axis=1), high.min(axis=1)
+    return not np.any((leave > enter) & (leave > _EPS_MM))
+
+
+def exposed_faces(path: Path = MODEL_IO, sides_only: bool = False) -> list:
+    """Every brick face on the target's outer surface, camera-visible in principle.
+
+    A face survives two tests: nothing occupies the millimetre just outside any
+    part of it, and a ray along its normal escapes the model. The first rejects
+    buried and partly covered faces, the second rejects the cavity.
+    """
+    bricks = load_bricks(path)
+    half, centres, rotations = _brick_frames(bricks)
+    quadrant = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=float)
+
+    faces = []
+    for i, brick in enumerate(bricks):
+        for axis in range(3):
+            for sign in (-1.0, 1.0):
+                normal = rotations[i][:, axis] * sign
+                centre = brick.centre + normal * half[axis]
+                # In-plane axes chosen so that (u, v, normal) is right-handed,
+                # which makes the corner order consistent for a renderer.
+                others = [k for k in range(3) if k != axis]
+                u, v = rotations[i][:, others[0]], rotations[i][:, others[1]]
+                if np.dot(np.cross(u, v), normal) < 0:
+                    u, v = v, u
+                    others = others[::-1]
+                hu, hv = half[others[0]], half[others[1]]
+                corners = centre + quadrant[:, 0:1] * u * hu + quadrant[:, 1:2] * v * hv
+                samples = np.vstack([centre[None], centre + (corners - centre) * 0.9])
+                if _occupied(samples + normal, half, centres, rotations).any():
+                    continue
+                if not _escapes(centre + normal * _EPS_MM, normal, half, centres, rotations):
+                    continue
+                face = Face(i, brick.colour, corners, normal)
+                if sides_only and not face.is_side:
+                    continue
+                faces.append(face)
+    return faces
+
+
+@dataclass(frozen=True)
+class LatticePoint:
+    """A seam intersection on one wall: where brick faces meet at a point."""
+
+    position: np.ndarray  # (3,) model millimetres
+    normal: np.ndarray  # (3,) outward normal of the wall it lies on
+    signature: Tuple[int, ...]  # brick colour in each quadrant, -1 off the wall
+    faces: int  # distinct faces meeting here
+
+    @property
+    def is_junction(self) -> bool:
+        """True for a point enclosed by brick on all four sides.
+
+        These are the well-conditioned features: two seams cross, so both image
+        coordinates are pinned by a brick-against-brick edge. A point on the
+        wall's silhouette has an edge against the background on one side, which
+        is far more sensitive to exposure and to whatever is behind the target.
+        """
+        return -1 not in self.signature
+
+    @property
+    def is_tee(self) -> bool:
+        """True where the two quadrants on one side share a face -- a T-junction.
+
+        In a running bond every interior junction is of this kind, which is
+        exactly why a checkerboard detector finds nothing: a T has no saddle.
+        """
+        a, b, c, d = self.signature
+        return self.is_junction and (a == c or b == d)
+
+
+def lattice_points(path: Path = MODEL_IO, quadrant_mm: float = 3.0) -> list:
+    """The detectable feature lattice: seam intersections, grouped by wall.
+
+    A point at the target's vertical edge is shared by two walls and appears
+    once for each, which is what a detector sees -- the two walls are imaged as
+    separate surfaces with different normals.
+
+    The `signature` is the correspondence key, and it is read the way a detector
+    reads it: sample the wall a few millimetres into each of the four quadrants
+    around the point, in the wall's own (along, up) frame, and record the brick
+    colour found there. Sampling rather than enumerating incident faces matters
+    because the brick spanning a T-junction covers two quadrants, and it is the
+    repeated colour that identifies the junction as a T.
+    """
+    faces = [f for f in exposed_faces(path) if f.is_side]
+    by_wall = {}
+    for face in faces:
+        by_wall.setdefault(tuple(np.round(face.normal, 6)), []).append(face)
+
+    up = np.array([0.0, 0.0, 1.0])
+    points = []
+    for normal_key, wall in sorted(by_wall.items()):
+        normal = np.array(normal_key)
+        along = np.cross(up, normal)
+        # Each wall is planar and axis-aligned, so a face is a rectangle in
+        # (along, up) and "which face covers this sample" is an interval test.
+        boxes = []
+        for face in wall:
+            a = face.corners @ along
+            z = face.corners @ up
+            boxes.append((a.min(), a.max(), z.min(), z.max(), face.colour))
+        corners = np.vstack([f.corners for f in wall])
+        _, first = np.unique(np.round(corners, 3), axis=0, return_index=True)
+
+        for index in sorted(first):
+            position = corners[index]
+            pa, pz = float(position @ along), float(position @ up)
+            signature = []
+            for da in (-quadrant_mm, quadrant_mm):
+                for dz in (-quadrant_mm, quadrant_mm):
+                    found = -1
+                    for a0, a1, z0, z1, colour in boxes:
+                        if a0 <= pa + da <= a1 and z0 <= pz + dz <= z1:
+                            found = colour
+                            break
+                    signature.append(found)
+            touching = sum(
+                np.min(np.abs(f.corners - position).sum(axis=1)) <= _EPS_MM for f in wall
+            )
+            points.append(LatticePoint(position, normal, tuple(signature), touching))
+    return points
