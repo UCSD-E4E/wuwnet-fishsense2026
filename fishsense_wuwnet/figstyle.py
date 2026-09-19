@@ -46,6 +46,51 @@ MAX_WIDTH_IN = 7.0
 #: Where the paper's figures land. Both formats, same stem.
 FIGURE_DIR = Path(__file__).resolve().parent.parent / "figures"
 
+#: Style keyed by pipeline *name*, not by plotting order.
+#:
+#: Several figures show all three pipelines in one panel and only the two
+#: corrected ones in the next. Left to the property cycle, the second panel
+#: restarts at slot 1 and repaints In-water SVP with Uncorrected's blue -- the
+#: same entity in two colours, one figure apart. Colour has to follow the entity.
+PIPELINE_STYLE = {
+    "Uncorrected": {"color": SERIES[0], "linestyle": DASHES[0]},
+    "In-water SVP": {"color": SERIES[1], "linestyle": DASHES[1]},
+    "Pinax": {"color": SERIES[2], "linestyle": DASHES[2]},
+}
+
+
+def pipeline(name: str, line: bool = True, **overrides) -> dict:
+    """Plot kwargs for one pipeline. `line=False` drops the dash pattern."""
+    style = dict(PIPELINE_STYLE[name])
+    if not line:
+        style.pop("linestyle", None)
+    style.update(overrides)
+    return style
+
+
+def colour_violin(parts, colour: str) -> None:
+    """Paint a `violinplot` result, which ignores the property cycle entirely."""
+    for body in parts["bodies"]:
+        body.set_facecolor(colour)
+        body.set_edgecolor(colour)
+        body.set_alpha(0.35)
+    for key in ("cbars", "cmins", "cmaxes", "cmeans", "cmedians"):
+        if key in parts:
+            parts[key].set_color(colour)
+            parts[key].set_linewidth(1.2)
+
+
+def colour_boxes(artists, names) -> None:
+    """Paint a `boxplot` result so each box carries its pipeline's colour."""
+    for i, name in enumerate(names):
+        colour = PIPELINE_STYLE[name]["color"]
+        artists["boxes"][i].set_color(colour)
+        artists["medians"][i].set_color(colour)
+        for key in ("whiskers", "caps"):
+            for artist in artists[key][2 * i : 2 * i + 2]:
+                artist.set_color(colour)
+
+
 _INK = "#0b0b0b"
 _INK_SECONDARY = "#52514e"
 _GRID = "#d8d7d2"
