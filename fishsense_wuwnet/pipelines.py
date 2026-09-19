@@ -66,6 +66,31 @@ def back_project_pinax(
     return np.array([0.0, 0.0, virtual_cop]), ray_directions(gamma, azimuth)
 
 
+def back_project_axial(
+    pixels, camera_intrinsics, port: FlatPort
+) -> Tuple[np.ndarray, np.ndarray]:
+    """The exact axial model: every ray leaves the port at its own point.
+
+    This is the flat-port geometry without approximation -- Agrawal et al.'s
+    non-central camera, of which Pinax is the central approximation. Each ray
+    exits the outer glass surface at radius `r_exit`, which grows with field
+    angle, so there is no common centre of projection to place a virtual pinhole
+    at. `back_project_pinax` discards exactly that offset.
+
+    It is the more correct model and, on this housing at survey range, worth
+    about 3% of the reprojection residual -- the offset reaches a few
+    millimetres against ranges of metres. Included so the figures can show that
+    the approximation is not what limits the result.
+    """
+    alpha, azimuth = pixel_to_alpha_azimuth(pixels, camera_intrinsics)
+    r_exit, gamma = exit_ray(alpha, port)
+    origins = np.stack(
+        [r_exit * np.cos(azimuth), r_exit * np.sin(azimuth), np.full_like(r_exit, port.d2)],
+        axis=-1,
+    )
+    return origins, ray_directions(gamma, azimuth)
+
+
 def measure_length(pixels_head, pixels_tail, depth, back_project) -> np.ndarray:
     """Length of a fish from its head and tail pixels, given a range estimate.
 
@@ -77,12 +102,20 @@ def measure_length(pixels_head, pixels_tail, depth, back_project) -> np.ndarray:
     `back_project` is one of the ``back_project_*`` functions above, already bound
     to its calibration.
     """
-    origin, head = back_project(pixels_head)
-    _, tail = back_project(pixels_tail)
+    head_origin, head = back_project(pixels_head)
+    tail_origin, tail = back_project(pixels_tail)
 
+    # Each endpoint carries its own ray origin. For a central model the two are
+    # the same point and this is the usual formula; for the axial model they are
+    # not, and using one endpoint's origin for both would reintroduce exactly the
+    # approximation the axial model exists to avoid.
     depth = np.asarray(depth, dtype=float)
-    head_point = origin + head * ((depth - origin[2]) / head[..., 2])[..., None]
-    tail_point = origin + tail * ((depth - origin[2]) / tail[..., 2])[..., None]
+    head_point = head_origin + head * (
+        (depth - head_origin[..., 2]) / head[..., 2]
+    )[..., None]
+    tail_point = tail_origin + tail * (
+        (depth - tail_origin[..., 2]) / tail[..., 2]
+    )[..., None]
 
     return np.linalg.norm(head_point - tail_point, axis=-1)
 

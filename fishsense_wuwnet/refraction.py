@@ -381,7 +381,8 @@ def reconstruct_points(directions, ray_origin, laser_origin, laser_axis):
     ----------
     directions : array_like, shape (..., 3)
         Camera ray directions (need not be unit).
-    ray_origin : array_like, shape (3,)
+    ray_origin : array_like, shape (3,) or (..., 3)
+        One origin, or one per ray for a non-central model.
     laser_origin, laser_axis : array_like, shape (3,)
 
     Returns
@@ -404,5 +405,8 @@ def reconstruct_points(directions, ray_origin, laser_origin, laser_axis):
     d = u @ v
     denom = 1.0 - d**2
 
-    s = (d * (v @ w0) - (u @ w0)) / denom
+    # Row-wise rather than matrix products, so `ray_origin` may be one point (a
+    # central model) or one per ray (an axial one, where every ray leaves the
+    # port at its own place and no common viewpoint exists).
+    s = (d * (w0 @ v) - np.sum(u * w0, axis=-1)) / denom
     return ray_origin + s[..., None] * u, denom

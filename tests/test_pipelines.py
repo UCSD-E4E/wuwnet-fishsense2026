@@ -84,3 +84,45 @@ def test_sign_flips_either_side_of_the_reference():
     error = differential_length_error(_radial(0.15), _ideal, PRINCIPAL, RADII, 1200.0)
     assert error[RADII < 1200.0].max() < 0.0
     assert error[RADII > 1200.0].min() > 0.0
+
+
+def test_the_axial_model_reconstructs_the_simulation_exactly():
+    """The exact model should recover a synthetic point to machine precision.
+
+    The simulation projects water points through the same flat-port physics the
+    axial back-projection inverts, so a round trip has nothing left to
+    approximate. Pinax, being the central approximation to it, must not be
+    exact -- and that difference is the whole content of the comparison, so both
+    halves are asserted.
+    """
+    from fishsense_wuwnet.pipelines import back_project_axial, back_project_pinax
+    from fishsense_wuwnet.refraction import (
+        FlatPort,
+        alpha_azimuth_to_pixel,
+        optimal_d0,
+        project_water_points,
+        reconstruct_points,
+        SWEET_WATER,
+    )
+
+    K = np.array([[2850.0, 0.0, 2007.0], [0.0, 2850.0, 1508.0], [0.0, 0.0, 1.0]])
+    d0, virtual_cop, _ = optimal_d0(0.006, 1.49, SWEET_WATER, np.radians(41.0))
+    port = FlatPort(d0, 0.006, 1.49, SWEET_WATER)
+
+    laser_origin = np.array([-0.04, -0.11, 0.0])
+    laser_axis = np.array([0.0, 0.0, 1.0])
+    ranges = np.linspace(0.6, 4.0, 12)
+    truth = laser_origin + ranges[:, None] * laser_axis
+
+    alpha, azimuth = project_water_points(truth, port)
+    pixels = alpha_azimuth_to_pixel(alpha, azimuth, K)
+
+    origins, directions = back_project_axial(pixels, K, port)
+    recovered, _ = reconstruct_points(directions, origins, laser_origin, laser_axis)
+    assert recovered == pytest.approx(truth, abs=1e-9)
+
+    cop, directions = back_project_pinax(pixels, K, port, virtual_cop)
+    approx, _ = reconstruct_points(directions, cop, laser_origin, laser_axis)
+    residual = np.abs(approx[:, 2] - truth[:, 2]).max()
+    assert residual > 1e-9, "Pinax is the central approximation; it cannot be exact"
+    assert residual < 1e-3, "but it should still be sub-millimetre over this range"

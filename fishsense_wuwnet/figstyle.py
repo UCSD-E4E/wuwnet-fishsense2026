@@ -56,6 +56,7 @@ PIPELINE_STYLE = {
     "Uncorrected": {"color": SERIES[0], "linestyle": DASHES[0]},
     "In-water SVP": {"color": SERIES[1], "linestyle": DASHES[1]},
     "Pinax": {"color": SERIES[2], "linestyle": DASHES[2]},
+    "Exact axial": {"color": SERIES[3], "linestyle": DASHES[3]},
 }
 
 
