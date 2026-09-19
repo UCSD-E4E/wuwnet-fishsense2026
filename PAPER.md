@@ -36,7 +36,7 @@ in-water session entirely.
 
 End to end -- camera calibrated in air, laser calibrated from a moving fish decoy, both
 then used to measure a 549 mm target held out of the laser calibration -- the
-reference-free pipeline reads **+2.2% median, 3.5% worst case** over 1.1-4.5 m, against
+reference-free pipeline reads **+0.0% median, 2.6% worst case** over 1.1-4.5 m, against
 **-5.4% median and 15.8% worst** for the same rig with no per-dive laser calibration, and
 **-0.3%** for a conventional slate calibration scored in-sample. That experiment isolates
 angle, which is what drifts, and is blind to absolute scale by construction; scale is
@@ -84,7 +84,7 @@ This paper removes both references. Our contributions are:
    to other housings; we say so explicitly in section 5.3 rather than let the pairing
    imply otherwise.
 4. **An end-to-end demonstration**: both halves calibrated with no in-water reference,
-   then used to measure a target held out of the laser calibration, at +2.2% median against
+   then used to measure a target held out of the laser calibration, at +0.0% median against
    -5.4% for the same rig uncalibrated -- with an explicit account of what that experiment
    can and cannot see (section 6.1), and a separate absolute-scale check against a
    calipered object at -0.4% (section 6.2).
@@ -351,7 +351,7 @@ result.
 | laser calibration | median | p90 abs | max abs |
 |---|---|---|---|
 | none -- bench beam, 48 min earlier | -5.4% | 8.4% | 15.8% |
-| **reference-free, cross-session** | **+2.2%** | 3.1% | 3.5% |
+| **reference-free, cross-session** | **+0.0%** | 1.2% | 2.6% |
 | **reference-free, leave-one-out** | **+1.0%** | 1.8% | 2.7% |
 | conventional slate (in-sample, optimistic) | -0.3% | 1.5% | 1.6% |
 
@@ -367,16 +367,21 @@ rather than against a fixed line -- the fraction of frames within each requireme
 | laser calibration | 2% | 5% | 10% | 15% |
 |---|---|---|---|---|
 | none -- bench beam | 0% | 40% | 80% | 90% |
-| **reference-free, cross-session** | 40% | **100%** | 100% | 100% |
+| **reference-free, cross-session** | 90% | **100%** | 100% | 100% |
 | **reference-free, leave-one-out** | 90% | **100%** | 100% | 100% |
 | conventional slate (in-sample) | 100% | 100% | 100% | 100% |
 
 The reference-free pipeline meets a 5% requirement on every frame, including across a
 handling event it was given no chance to observe; the same rig without a per-dive
-calibration meets it on two frames in five. The residual gap to the slate -- about 2.5
-percentage points of *bias*, not scatter -- is consistent with the 0.270 deg of beam drift
-between the two sessions, and the leave-one-out row, which removes that drift, closes most
-of it.
+calibration meets it on two frames in five.
+
+The reference-free row matches the in-sample slate, which deserves scepticism rather than
+celebration, so we separate the two things it contains. The beam *direction* recovered
+from the decoy still differs from the board session's by 0.261 deg -- real drift over ten
+minutes and a handling event, which no estimator can undo. What the size measure fixes is
+the *estimation* error in the vanishing point, from 3.7 px to 0.2 px. The drift that
+remains lies mostly across the locus rather than along it, and only the along-locus
+component reaches the range. Not all drift costs a measurement.
 
 One systematic appeared in the reference-free and conventional rows alike when the board
 was assumed square: its long-axis span read 0.4 percentage points differently from its
@@ -435,10 +440,22 @@ underwater white balance leaves the flank and the water the same hue. A fish wil
 the same problem. Comparing the two size
 measures:
 
-| size measure | `p_D` vs reference | leave-one-out sd | size *by-product* |
+| size measure | `p_D` vs reference | leave-one-out sd | fit residual |
 |---|---|---|---|
-| **body height at the dot** | **3.8 px** | 2.1 px | 99.7 mm (depth) |
-| snout-to-tail length | 12.3 px | 1.7 px | 274 mm (length) |
+| **sqrt(mask area)** | **0.2 px** | 0.5 px | 2.4 px |
+| body height at the dot | 3.7 px | 2.1 px | 15.6 px |
+| snout-to-tail length | 12.2 px | 1.7 px | 10.6 px |
+
+The area wins because it uses every pixel of the silhouette, while any chord inherits
+whatever the chord is drawn through. Height at the dot inherits the dot's wander along the
+body -- 0.107 of a body length between frames here, worth 6.5% of the height on its own --
+and that noise propagates straight into the intercept. Measured frame-to-frame consistency:
+1.1% for the area against 6.5% for the height at the dot.
+
+The caveat is the failure mode named below. Silhouette area falls off with yaw, so if a
+diver's approach angle were correlated with range -- head-on far away, side-on close in --
+the area would carry exactly the range-correlated bias that reaches the vanishing point.
+Here it is not, and the noise reduction dominates; on a survey dive it should be checked.
 
 Height closes the beam inside budget; length fails exactly as predicted, because the far
 frames are the oblique ones. Per-frame scatter is 10-16 px -- the decoy swings -- yet the
@@ -608,7 +625,7 @@ the dot locus, which is pinhole geometry and therefore not specific to any port:
 four degrees of freedom are free, and the remaining scale gauge is broken by the apparent
 size of whatever the dot lands on -- the dive's own subjects, of unknown size.
 End to end, with no reference object ever entering the water, the rig measures a held-out
-549 mm target to +2.2% median and 3.5% worst case across 1.1-4.5 m -- inside a 5%
+549 mm target to +0.0% median and 2.6% worst case across 1.1-4.5 m -- inside a 5%
 requirement on every frame -- where the same rig without a per-dive laser calibration reads
 -5.4% median and 15.8% worst. That comparison isolates the angular calibration, which is
 what drifts between dives; absolute scale, tested separately against a calipered object,
