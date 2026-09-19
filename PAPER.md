@@ -153,6 +153,18 @@ We photographed one checkerboard (14 × 10 interior corners, 42 mm pitch) with o
 camera in air and then in a pool the same afternoon — a matched pair with no confound
 in camera, target, or operator. 63 in-air and 121 in-water frames yielded corners.
 
+**Three pipelines are compared throughout.** *Uncorrected* uses the in-air
+calibration underwater unchanged -- the do-nothing baseline. *In-water SVP* is an
+ordinary OpenCV calibration fitted to the underwater frames under a **single-viewpoint**
+model: pinhole plus radial distortion, which assumes every ray passes through one centre
+of projection. That assumption is precisely what a flat port destroys -- refraction makes
+the camera *axial*, its rays crossing the optical axis over a spread of points rather than
+at one -- but the radial terms absorb most of the refraction anyway, which is what makes
+it a fair baseline rather than a straw man. It is also the state of practice: calibrate
+underwater and treat the result as a pinhole. *Pinax* is the in-air calibration plus the
+analytic refraction correction. Only the first needs no wet session; only the third needs
+no wet session *and* claims to be right.
+
 **The physics is confirmed in kind, with a residual we do not model.** The ratio of
 in-water to in-air fitted focal
 length is **1.3126**, against a water refractive index of 1.333 -- the right effect, of
@@ -214,8 +226,8 @@ which this dataset does not have.
 
 ### 4.3 A correction to the case for Pinax
 
-Median homography residuals are: uncorrected 2.85e-4, in-water single-viewpoint (SVP)
-calibration 1.17e-4, Pinax 1.26e-4. The two corrections track each other within the line
+Median homography residuals are: uncorrected 2.85e-4, in-water SVP 1.17e-4, Pinax
+1.26e-4. The two corrections track each other within the line
 width at every radius. Note that this metric, unlike the length comparison above,
 privileges neither: a homography residual is computed against the board's own plane, so
 each model is scored on its own.
