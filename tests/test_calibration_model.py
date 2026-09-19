@@ -16,7 +16,6 @@ import pytest
 
 from fishsense_wuwnet.calibration_model import (
     BRICK_MM,
-    MARKER_COLOURS,
     STUD_MM,
     exposed_faces,
     extent_mm,
@@ -47,22 +46,44 @@ def test_extent_is_a_whole_number_of_studs_and_bricks():
     assert extent == pytest.approx([18 * STUD_MM, 16 * STUD_MM, 9 * BRICK_MM], abs=1e-3)
 
 
-def test_every_wall_carries_two_marker_colours_and_the_pair_names_the_wall():
-    """This is what lets a detector say which face it is looking at.
+def test_no_joint_has_the_same_colour_on_both_sides():
+    """The property the target was recoloured for, and it buys two things.
 
-    Only two or three walls are visible at once, so correspondence cannot start
-    from the whole target. It starts from the wall, and the wall is identified
-    by which pair of saturated colours appears on it -- a pair, not a single
-    colour, because each marker hue is shared between two adjoining walls.
+    A joint whose two faces share a colour is not a joint in the image: the
+    blobs merge, and a merged pair looks like one brick of the wrong size. It
+    also costs accuracy even when it does not merge, because a joint centre can
+    only be read as the midpoint of two observed edges if both edges are there;
+    with one side invisible the chamfer becomes a constant you have to know
+    rather than one that cancels.
+
+    The as-built target had 92 such joints of 375, sixty of them black-on-black.
+    Black is the worst case twice over, since a black brick's own edge against
+    the dark seam is not visible either -- so the palette is five colours and
+    none of them is black.
     """
-    walls = defaultdict(set)
+    up = np.array([0.0, 0.0, 1.0])
+    walls = defaultdict(list)
     for face in exposed_faces(sides_only=True):
-        if face.colour in MARKER_COLOURS:
-            walls[tuple(np.round(face.normal, 6))].add(face.colour)
+        walls[tuple(np.round(face.normal, 6))].append(face)
 
-    assert len(walls) == 4
-    assert all(len(pair) == 2 for pair in walls.values())
-    assert len({frozenset(pair) for pair in walls.values()}) == 4
+    assert 0 not in {f.colour for w in walls.values() for f in w}, "black is back"
+
+    shared = 0
+    for normal, wall in walls.items():
+        along = np.cross(up, np.array(normal))
+        boxes = [(f.corners @ along, f.corners @ up, f) for f in wall]
+        for index, (a0, z0, first) in enumerate(boxes):
+            for a1, z1, second in boxes[index + 1 :]:
+                if first.brick == second.brick or first.colour != second.colour:
+                    continue
+                side = (abs(a0.max() - a1.min()) < 1e-3 or abs(a1.max() - a0.min()) < 1e-3) and (
+                    min(z0.max(), z1.max()) - max(z0.min(), z1.min()) > 1e-3
+                )
+                stacked = (abs(z0.max() - z1.min()) < 1e-3 or abs(z1.max() - z0.min()) < 1e-3) and (
+                    min(a0.max(), a1.max()) - max(a0.min(), a1.min()) > 1e-3
+                )
+                shared += side or stacked
+    assert shared == 0
 
 
 def test_exposed_faces_exclude_the_cavity():
@@ -108,27 +129,27 @@ def test_the_bond_produces_tee_junctions_rather_than_saddle_points():
     assert all(p.is_tee for p in junctions), "a running bond admits no other kind"
 
 
-def test_a_local_colour_window_cannot_locate_itself_on_the_target():
-    """Why correspondence is global, and what a re-colouring would buy.
+def test_a_local_colour_window_locates_itself_uniquely_on_the_target():
+    """What the recolouring bought: a partial view can say where it is.
 
-    The interior of every wall is a plain two-colour running bond, so a patch
-    of it looks like every other patch: even a window four bricks wide matches
-    more than twenty places on the target. A detector therefore cannot identify
-    points from their neighbourhood the way a ChArUco board does; it has to
-    register a whole wall, anchored on the marker columns at the wall's ends.
+    The as-built target was a periodic two-colour bond with markers only at the
+    wall ends, so *every* local window matched more than twenty places and
+    correspondence had to register a whole wall against a marker column. It also
+    meant a wrong anchor reprojected as well as the right one, which is how a
+    view could pose 147 degrees from the truth at barely a pixel of residual.
 
-    Recorded as a test because it is a property of the *colour layout*, not of
-    the bond, and so it is the thing to change if partial views are ever needed.
+    Now every three-course by four-stud window on every wall is unique, so a
+    window identifies its own position outright.
     """
+    up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
     for face in exposed_faces(sides_only=True):
         walls[tuple(np.round(face.normal, 6))].append(face)
 
-    up = np.array([0.0, 0.0, 1.0])
     windows = defaultdict(int)
     placements = 0
-    for normal_key, wall in walls.items():
-        along = np.cross(up, np.array(normal_key))
+    for normal, wall in walls.items():
+        along = np.cross(up, np.array(normal))
         boxes = [(f.corners @ along, f.corners @ up, f.colour) for f in wall]
         a0 = min(a.min() for a, _, _ in boxes)
         z0 = min(z.min() for _, z, _ in boxes)
@@ -151,7 +172,7 @@ def test_a_local_colour_window_cannot_locate_itself_on_the_target():
                 windows[window.tobytes()] += 1
 
     assert placements > 300
-    assert max(windows.values()) > 20, "if this drops to 1 the layout became unique"
+    assert max(windows.values()) == 1
 
 
 def test_fitting_the_model_to_a_transformed_copy_recovers_the_transform():

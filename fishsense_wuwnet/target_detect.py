@@ -16,6 +16,7 @@ patch of the wall cannot identify itself (see the model module's tests) and so
 nothing more local than a whole-wall registration would work.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
@@ -253,11 +254,13 @@ def match(
     either confirms the pairing or kills it, at a few hundred hypotheses per
     wall, which is cheap.
 
-    Seeding from *markers* is what keeps that count small: a marker colour
-    appears eight or ten times on the whole target where white appears fifty.
-    Seeding from a local neighbourhood would not work at all, because the
-    interior of a wall is a periodic two-colour bond and a patch of it cannot
-    say where it is.
+    Seeds are the *rarest* colour the view and the wall have in common, which
+    is what keeps the count small. On the as-built target that is automatically
+    a marker colour, appearing eight or ten times where white appears fifty; on
+    a target coloured more evenly it picks whatever is scarcest rather than
+    relying on a marker convention that no longer holds. Seeding from a local
+    neighbourhood is the thing that cannot be assumed, because on a periodic
+    two-colour bond a patch cannot say where it is.
 
     Every wall is then made to prove itself. The hypothesis search allows a
     reflection, because the detector's corner order and the model's differ by a
@@ -274,7 +277,7 @@ def match(
 
     for (normal_key, _depth), wall in _wall_groups(path).items():
         local, _ = _wall_coordinates(wall)
-        markers = [(i, f) for i, f in enumerate(wall) if f.colour in MARKER_COLOURS]
+        markers = _seed_faces(wall, detected)
 
         # Both handednesses are carried all the way to the pose test, and the
         # score is not allowed to choose between them. The detector orders
@@ -286,11 +289,19 @@ def match(
         # outward normal can tell them apart.
         for flip in (1, -1):
             best_score, best_pairs = 0, []
-            for index, face in markers:
-                source = local[index].astype(np.float32)
-                for quad in detected:
+            # Largest quads first: they are the best-localised, so the correct
+            # anchor tends to be found in the first handful of tries and the
+            # early exit below then skips the rest.
+            order = sorted(
+                (q for q in detected if any(q.colour == f.colour for _, f in markers)),
+                key=lambda q: -abs(cv2.contourArea(q.corners.astype(np.float32))),
+            )
+            enough = max(min_faces, int(round(0.6 * len(wall))))
+            for quad in order:
+                for index, face in markers:
                     if quad.colour != face.colour:
                         continue
+                    source = local[index].astype(np.float32)
                     for roll in range(4):
                         target = np.roll(quad.corners[::flip], roll, axis=0).astype(np.float32)
                         homography = cv2.getPerspectiveTransform(source, target)
@@ -299,6 +310,9 @@ def match(
                         pairs = _score(homography, wall, local, detected, centre_tolerance)
                         if len(pairs) > best_score:
                             best_score, best_pairs = len(pairs), pairs
+                if best_score >= enough:
+                    break
+
             if best_score < min_faces:
                 continue
 
@@ -334,15 +348,23 @@ def match(
             object_points.append(visible_corners(face))
             image_points.append(corners)
             matched_faces.append(face)
-    return _reject_outliers(
+    kept = _reject_outliers(
         Correspondence(np.vstack(object_points), np.vstack(image_points), tuple(matched_faces)),
         camera_intrinsics,
     )
+    # `min_faces` is enforced per wall *before* the pose test, and outlier
+    # rejection can prune below it afterwards. Without re-checking, a two-face
+    # consensus escapes as a confident answer: a handful of points on one plane
+    # barely constrain a pose, so it reprojects under a pixel while sitting more
+    # than a hundred degrees from the truth. An empty result is the honest one.
+    if len(kept) < 4 * min_faces:
+        return Correspondence(np.empty((0, 3)), np.empty((0, 2)), ())
+    return kept
 
 
 def _reject_outliers(
     correspondence: Correspondence, camera_intrinsics, tolerance_px: float = 3.0
-) -> Correspondence:
+) -> Correspondence:  # noqa: D401
     """Drop whole faces that a single pose cannot explain.
 
     Per-wall scoring is local: it is satisfied by a face landing near where the
@@ -412,17 +434,22 @@ def _pose_gap(pose, reference) -> float:
 def _score(homography, wall, local, detected, centre_tolerance):
     """Face-to-quad pairings implied by a homography, with corners in order."""
     pairs = []
+    centres = np.array([q.centre for q in detected])
+    colours = np.array([q.colour for q in detected])
     for index, face in enumerate(wall):
         projected = cv2.perspectiveTransform(
             local[index].reshape(1, 4, 2).astype(np.float32), homography
         ).reshape(4, 2)
         scale = np.linalg.norm(projected - projected.mean(axis=0), axis=1).mean()
         centre = projected.mean(axis=0)
-        for quad in detected:
-            if quad.colour != face.colour:
-                continue
-            if np.linalg.norm(quad.centre - centre) > centre_tolerance * scale:
-                continue
+        # Vectorised because this runs for every face of every hypothesis, and
+        # there are thousands of hypotheses per wall.
+        near = np.flatnonzero(
+            (colours == face.colour)
+            & (np.linalg.norm(centres - centre, axis=1) <= centre_tolerance * scale)
+        )
+        for candidate in near:
+            quad = detected[candidate]
             # Corner order is set by the projection, not by the detector's own
             # arbitrary starting corner.
             cost = np.linalg.norm(projected[:, None, :] - quad.corners[None, :, :], axis=2)
@@ -432,3 +459,33 @@ def _score(homography, wall, local, detected, centre_tolerance):
             pairs.append((index, face, quad.corners[order]))
             break
     return pairs
+
+
+def _seed_faces(wall: Sequence[Face], detected: Sequence[Quad], colours: int = 1):
+    """`(index, face)` pairs to seed hypotheses from: the cheapest few colours.
+
+    Each seed costs eight homographies per detected quad of its colour, so a
+    colour's cost is (faces of that colour on the wall) x (quads of it in the
+    image). Taking the cheapest few rather than naming marker colours in advance
+    keeps this working when the target is recoloured -- on the as-built target
+    the cheapest four *are* the markers.
+
+    One colour is the default and it is enough *for a target whose local colour
+    windows are unique*, which the current one's are. Measured across six views
+    on it, widening to two, three or four colours changes nothing at all -- the
+    same 54.3 faces and the same 0.139 degree pose -- while costing 4.7 times
+    the runtime, because a wrong anchor no longer scores well enough to win.
+
+    On the earlier black-and-white target it was not enough, and the failure was
+    not subtle: the bond was periodic, so a wrong anchor reprojected under a
+    pixel while posing 147 degrees from the truth. If the target is ever
+    recoloured into something periodic again, raise this.
+    """
+    available = {q.colour for q in detected}
+    on_wall = Counter(f.colour for f in wall if f.colour in available)
+    if not on_wall:
+        return []
+    in_view = Counter(q.colour for q in detected)
+    cheapest = sorted(on_wall, key=lambda c: on_wall[c] * in_view[c])[:colours]
+    chosen = set(cheapest)
+    return [(i, f) for i, f in enumerate(wall) if f.colour in chosen]

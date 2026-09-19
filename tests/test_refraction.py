@@ -5,6 +5,8 @@ being right. Table 1 of the paper is the one published numeric oracle; the rest
 are internal-consistency checks that would catch a sign or convention slip.
 """
 
+from collections import Counter
+
 import numpy as np
 import pytest
 
@@ -440,10 +442,17 @@ def test_the_calibration_target_geometry_is_exact_and_metric():
     points = model_points()
     assert points.shape == (8 * 135, 3)
 
-    # Four marker colours, one per wall, so a detected marker names the face.
-    markers = [b for b in bricks if b.is_marker]
-    assert len(markers) == 18
-    assert len({b.colour for b in markers}) == 4
+    # Five colours, none of them black. The original design used black and white
+    # with four marker colours at the wall ends, which made a detected marker
+    # name the face; that convention is gone, because a periodic two-colour bond
+    # left every local window ambiguous and a black brick has no visible edge
+    # against the dark seam. Colours are now spread so that no joint has the
+    # same colour on both sides -- see the calibration-model tests.
+    from fishsense_wuwnet.calibration_model import COLOURS
+
+    palette = {COLOURS[b.colour] for b in bricks}
+    assert palette == {"white", "red", "blue", "green", "yellow"}
+    assert min(Counter(b.colour for b in bricks).values()) >= 20
 
 
 def test_similarity_fit_separates_shape_error_from_scale():

@@ -85,8 +85,17 @@ class Brick:
 
 
 def _ldraw_lines(path: Path = MODEL_IO, entry: str = MODEL_ENTRY):
-    with zipfile.ZipFile(path) as zf:
-        return zf.read(entry).decode("utf8", "replace").splitlines()
+    """The model's LDraw text, from a Studio `.io` or a bare `.ldr`.
+
+    Studio's `.io` is a zip carrying the `.ldr`; a bare `.ldr` is what falls out
+    of editing the design outside Studio, and both have to load or the two can
+    drift apart silently.
+    """
+    path = Path(path)
+    if zipfile.is_zipfile(path):
+        with zipfile.ZipFile(path) as zf:
+            return zf.read(entry).decode("utf8", "replace").splitlines()
+    return path.read_text(encoding="utf8", errors="replace").splitlines()
 
 
 def load_bricks(path: Path = MODEL_IO) -> list:
