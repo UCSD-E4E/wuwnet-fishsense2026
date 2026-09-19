@@ -372,3 +372,58 @@ already is, as an optimistic bound on the drift-free case rather than an indepen
 
 Items 1–4 were all corrections to what the paper *claims*, not to what it did, and are
 done. **Related work is now the only substantive gap** before figures and formatting.
+
+
+---
+
+# Round 3 — 2026-09-19: scope reset
+
+The paper was restructured after two scope decisions and one measurement that
+invalidated its headline. Most of Rounds 1 and 2 no longer applies, because the
+sections they were about have moved out.
+
+**The laser work is P2's.** It removes the barrier P2's `HANDOFF.md` §1 calls
+"calibration target must be fabricated by measurement", for the laser half, by
+removing the target. Sections 5 and 6 of the old draft, and the mount-prior
+negative result, are extracted to `LASER_SECTIONS_FOR_P2.md`. The code, tests and
+notebooks stay here. Rounds 1–2 items A2, B3, H2, H3 and H4 went with them.
+
+**P1 is the rig paper.** This one is about the port, and motivation that reaches
+past the port — extrinsics drift, per-dive recalibration — belongs elsewhere.
+
+**The headline was unreachable.** The old §4.2 quoted +22 % to +55 % length error
+off-axis. The laser dot has to land on the fish, which pins the fish near the
+optical axis; measured on 227 production frames, the dot falls inside the body
+span in 100 % of them, mid-body. Over every (length, range) pair the corpus
+actually photographed, the uncorrected error is **p50 1.2 %, p95 5.5 %, max
+14.3 %** — it never breaches the 15 % budget on any geometry the rig can produce.
+The real-data end-to-end that I had read as contradicting the paper agrees with
+this exactly.
+
+## What that leaves, and what is now open
+
+The paper's claim is smaller and better founded: the port's cost is modest, it is
+bounded by the laser geometry rather than by the optics alone, and correcting it
+is free. The motivation moves from accuracy to operability, and the keystone is
+**centrality** — in air the camera is a pinhole, which is what makes commodity
+3D targets and ordinary tooling possible, and has no underwater equivalent.
+
+| # | open item | note |
+|---|---|---|
+| 1 | §5 "What calibrating in air enables" is an outline | the keystone, and currently the weakest-written part |
+| 2 | §4.2 rewrite | numbers computed, prose not written |
+| 3 | §6 rewrite around the camera-only end-to-end | must say plainly that the correction buys little *on this data*, and why that is consistent rather than contradictory |
+| 4 | §9 conclusion | follows 1–3 |
+| 5 | Related work | unchanged from Round 1: the longest pole, and §4.3 is the contested claim |
+| 6 | LEGO pilot | in progress; would turn §5 from enabled-but-untested into demonstrated, and would settle §8's `fx/fy` question if shot with 90° rolls |
+| 7 | Figures, then ACM LaTeX | unchanged |
+
+## Carried over and still true
+
+- **B2** — §4.2's table scores against the in-water calibration, which reads zero by
+  construction. Still holds for the free-field numbers that remain.
+- **C2** — the water/air focal ratio sits 1.5 % below `n_w` and the paper says the
+  offset "ought eventually to be predicted rather than absorbed". Still unpredicted.
+- **C3** — the radial curves reject partial boards and are conservative by an
+  unquantified amount.
+- **The `fx/fy` anisotropy** is unresolved and a rule cannot resolve it. Item 6 can.

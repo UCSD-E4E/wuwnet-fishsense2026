@@ -1,52 +1,32 @@
-# Calibrating an Underwater Laser-Camera Rig Without an In-Water Reference
+# Calibrating an Underwater Camera in Air: Removing the Corrective Optic from a Laser–Camera Rig
 
-*Draft, WUWNet 2026. Sections marked [TODO] are placeholders.*
+*Draft. Sections marked [TODO] are placeholders.*
 
 ## Abstract
 
-Laser–camera rigs measure fish length underwater by reading range from a projected
-dot and transverse extent from the image. Both halves must be calibrated, and both
-are conventionally calibrated against a reference object placed in the water: a
-checkerboard for the camera and a dive slate for the laser. Underwater calibration
-is the dominant cost of operating such a rig, and it is repeated because the laser's
-extrinsics are not stable between dives.
+A laser–camera rig measures fish length from one image: range from a projected dot,
+transverse extent from the camera. Behind the flat port of a dive housing the camera is
+not a pinhole -- refraction at the pane makes it an *axial* system, whose rays cross the
+optical axis over a spread of points rather than at one -- so the deployed reference
+implementation restores the air path in hardware, with a wide-angle air lens fitted at
+the port, and calibrates the camera in the water.
 
-We show that neither reference is necessary, by two independent arguments. For the
-camera, a flat port is an axial imaging system whose refraction is a pure function of
-the water refractive index, so an in-air calibration plus a per-pixel correction
-(Pinax) replaces the in-water session; this half is specific to the port. For the
-laser, the dot locus through a correctly-modelled camera is a straight line whose two
-free parameters are fixed by the dots alone, and the remaining scale gauge — the
-position of the beam's vanishing point along that line — is broken by the *apparent
-size* of any rigid object the dot happens to land on, whose true size need not be
-known. The dive's own subjects are the calibration target. **This second argument is
-not specific to a flat port**: it is pinhole geometry applied to corrected directions,
-and a dome-ported rig can adopt it unchanged. What the two halves share is the
-corrected directions, and what their combination buys is the system property we test:
-no reference object of any kind enters the water.
+We replace the optic with a model. An in-air calibration plus an analytic per-pixel
+correction reproduces what the in-water calibration achieves, which lets the lens come
+off and the calibration target stay dry. The consequence we think matters most is not
+accuracy but what it unlocks: **in air the camera is central**, so ordinary multi-view
+calibration applies, and the target can be a commodity three-dimensional object rather
+than a fabricated, measured plane. No equivalent is available underwater without solving
+refractive structure-from-motion first.
 
-On a matched in-air/in-water dataset we confirm the refraction physics directly
-(water/air focal ratio 1.3214 against a predicted 1.333) and quantify the cost of
-ignoring it: an uncorrected flat port over-reads a fish at the frame corner by 22%
-while under-reading one near the optical axis, an error no single scale factor can
-absorb. We also report a correction to the usual case for Pinax: on geometry alone, a
-properly fitted in-water calibration is indistinguishable from it, and the real
-advantages are calibration noise (2.1× worse in water) and the removal of the
-in-water session entirely.
-
-End to end -- camera calibrated in air, laser calibrated from a moving fish decoy, both
-then used to measure a 549 mm target held out of the laser calibration -- the
-reference-free pipeline reads **+0.0% median, 2.6% worst case** over 1.1-4.5 m, against
-**-5.4% median and 15.8% worst** for the same rig with no per-dive laser calibration, and
-**-0.3%** for a conventional slate calibration scored in-sample. That experiment isolates
-angle, which is what drifts, and is blind to absolute scale by construction; scale is
-tested separately against an independently calipered object and comes back to **-0.4%**. Component-wise, the
-estimator recovers the beam direction to 0.009 deg against a slate reference, and on 2,927
-frames of an independent production corpus it reproduces a known-length calibration to
-0.003 deg (median, 10 dives) where the reference object is a slab. We give the failure
-mode -- a size measure that drifts with range moves the vanishing point, and no averaging
-removes it -- and two negative results, including that the flat port's own scale
-signal is too small to supply range for this housing.
+We also correct the usual case for the correction. Measured against a rigid target with
+a ground-truth-free test, an uncorrected flat port costs far less than the free-field
+analysis suggests -- **1.2 % at the median frame and 14.3 % at worst** over every
+geometry the production corpus actually photographed -- because the laser dot must land
+on the fish, which pins the fish near the optical axis. And a properly fitted in-water
+single-viewpoint calibration is geometrically indistinguishable from the analytic
+correction, so the case for the latter rests on the wet session it removes, not on the
+error it corrects. We report both, together with what a dome port would cost instead.
 
 ## 1. Introduction
 
@@ -54,99 +34,76 @@ signal is too small to supply range for this housing.
 
 A stereo rig measures length from disparity; a laser–camera rig measures it from one
 camera plus a projected dot, which is cheaper, smaller and easier to make watertight.
-The price is calibration. The camera's intrinsics must account for the refraction at
-the housing port, and the laser's position and direction in the camera frame — its
-extrinsics — must be known. Neither survives a dive unchanged: the port is a
-refractive element whose effect depends on the water, and the laser is a mechanical
-assembly that moves.
+The price is refraction. A dive housing presents a flat pane to the water, and a flat
+pane is not optically neutral: rays bend at the interface by an amount that grows with
+field angle, and the camera behind it has no single centre of projection at all.
 
-The laser's half of that is worth stating precisely, because it is the whole reason
-the second half of this paper exists. Crutchfield et al. report that the laser extrinsics
-move between dives [??], and the effect is large enough to see in a single afternoon: in
-section 6.1 we measure a rig against a target of known size using its own extrinsics from
-48 minutes earlier, and it reads **5.4 % short at the median and 15.8 % at worst**,
-missing a 5 % tolerance on six frames in ten. So the laser must be recalibrated in the
-water, every dive — which is what the deployed procedure does, against a dive slate: a
-known planar target, photographed several times per dive, whose pose places each dot in
-three dimensions so a line can be fitted through them. The slate is what makes that
-expensive and puts it out of reach of an untrained operator.
+The deployed system solves this in hardware. It fits a wide-angle **air lens** at the
+port, restoring an air path so the camera behaves as a pinhole again, and calibrates it
+in the water. Both choices cost something operationally. The lens is a part to carry,
+fit, and purge of trapped air before the dive; that last step is invisible to the diver
+if it goes wrong, and when it does, the result is an occlusion across part of the frame
+that has cost this deployment tens of measurements and some repeated calibration work.
+And calibrating in the water means the target goes in the water.
 
-We take the movement itself as given and do not characterise it. How far the mount
-moves, on what timescale, and with how many degrees of freedom is a question about the
-hardware, needs the per-dive extrinsics of many units rather than one dive's dots, and
-is the subject of separate work. Nothing here depends on the answer: the method treats
-the previous calibration as unavailable regardless of why.
+This paper removes both by modelling the port instead. That is not a new model -- the
+correction is Łuczyński et al.'s, and we implement it unchanged -- and our contribution
+is not the model but what follows from being able to calibrate dry.
 
-This paper removes both references. Our contributions are:
+**The keystone is that in air the camera is central.** Underwater behind a flat pane it
+is axial, so multi-view methods that assume a single viewpoint do not apply; recovering
+intrinsics there means solving refractive structure-from-motion, which is a research
+problem rather than something an untrained operator runs. Move the calibration into air
+and that constraint lifts entirely. Ordinary tooling applies, and the target no longer
+has to be a printed plane whose pitch must be measured before it can be trusted -- it can
+be a commodity three-dimensional object, which is both more accessible and better
+conditioned than the plane it replaces.
 
-1. **A direct, ground-truth-free measurement of flat-port refraction error** on a
-   matched in-air/in-water dataset, using a homography-residual test that requires no
-   external reference, and a decomposition of the resulting length error into a small
-   *local* term and a dominant *differential* term that prior treatments conflate
-   (§4).
-2. **A correction to the case for the Pinax model**: on geometry alone it is
-   indistinguishable from a well-fitted in-water calibration. Its advantages are
-   elsewhere (§4.3).
-3. **A per-dive laser calibration that needs no target**, spending no known length and
-   no known range, using the apparent size of arbitrary rigid objects in the scene
-   (section 5). It requires a correct camera model but not a flat port, so it transfers
-   to other housings; we say so explicitly in section 5.3 rather than let the pairing
-   imply otherwise.
-4. **An end-to-end demonstration**: both halves calibrated with no in-water reference,
-   then used to measure a target held out of the laser calibration, at +0.0% median against
-   -5.4% for the same rig uncalibrated -- with an explicit account of what that experiment
-   can and cannot see (section 6.1), and a separate absolute-scale check against a
-   calipered object at -0.4% (section 6.2).
-5. **Validation on an independent production corpus** of 2,927 frames over 32 dives,
-   and the estimator's one systematic failure mode (section 6).
-6. **Two negative results** that constrain the design space: the flat port cannot
-   supply range at this housing's geometry, and no prior on the laser mount available
-   to us closes the beam without scene content -- which is what makes the apparent-size
-   route necessary rather than merely convenient (§7).
+Our contributions are:
+
+1. **A direct, ground-truth-free measurement of flat-port refraction error**, using a
+   homography-residual test that needs no external reference, no known pose and no known
+   scale, and which predicts the error's *shape* rather than only its size (§4.1).
+2. **A corrected account of what that error costs**, which is much less than the
+   free-field figure usually quoted, because the laser geometry constrains where a
+   measurable fish can be (§4.2).
+3. **A correction to the case for the analytic model**: on geometry alone a well-fitted
+   in-water calibration matches it, so its advantage is the wet session it removes (§4.3).
+4. **The consequence of calibrating in air** -- centrality, and the commodity
+   three-dimensional targets it permits (§5).
+5. **Two negative results** that constrain the design space: the flat port cannot supply
+   range at this housing's geometry, and the cost of the port is not a property of the
+   port alone but of the port together with the laser mount (§4.2, §7).
 
 ## 2. Related work
 
 [TODO: Treibitz et al. on flat refractive geometry; Agrawal et al. axial cameras;
-Łuczyński et al. 2017 Pinax; Jordt-Sedlazeck & Koch; underwater SfM; laser-camera
-ranging in fisheries — Rochet et al., Dunbrack; stereo-video alternatives.]
-
-The Pinax model [Łuczyński et al. 2017] treats a flat port as an axial camera and
-computes a virtual pinhole at an optimal offset, from which a per-pixel refraction map
-is derived. Its central practical claim is that the camera can be calibrated in air
-and corrected analytically for any water salinity. We adopt the model and test that
-claim, and we separate the parts of it that hold on geometry from the parts that hold
-for other reasons.
+Łuczyński et al. 2017; Jordt-Sedlazeck & Koch on refractive SfM; dome ports; underwater
+stereo. The SVP-vs-model comparison in §4.3 is the contested claim and must engage
+Łuczyński's own evaluation directly.]
 
 ## 3. System and problem statement
 
-The rig is an Olympus TG-6 in a commercial flat-port housing with a 532 nm laser
-module mounted alongside, offset by |O| ≈ 104 mm from the optical axis and nominally
-parallel to it. Images are processed in raw sensor coordinates (4014 × 3016); the
-camera's own JPEG pipeline applies a radial lens correction which, measured against
-raw, displaces corners by ~1 px with radius correlation +0.85 — the same functional
-form as the refraction signal, so measuring one through the other would confound them.
+The rig is an Olympus TG-6 in a commercial flat-port housing with a 532 nm laser module
+mounted alongside, offset by `|O|` ≈ 104 mm from the optical axis and nominally parallel
+to it. Images are processed in raw sensor coordinates (4014 × 3016); the camera's own
+JPEG pipeline applies a radial lens correction which, measured against raw, displaces
+corners by ~1 px with radius correlation +0.85 — the same functional form as the
+refraction signal, so measuring one through the other would confound them.
 
-Write the beam as `P(t) = O + tD` in the camera frame, with `O = (O_x, O_y, 0)` and
-`D = (D_x, D_y, 1)`. Length is obtained as `L = ℓ_px · Z / f`, where `Z` is the range
-read off the beam. The calibration problem is thus:
+Length is obtained as `L = ℓ_px · Z / f`, with `Z` the range read off the laser. The
+tolerance the deployment works to is **15 % on length, worst case**, so that is the bar
+every number here is held against.
 
-- **camera**: recover the map from pixels to scene rays through the port;
-- **laser**: recover `(O, D)`, four degrees of freedom, once per dive.
+One feature of the geometry does more work than anything else in this paper, and it is
+easy to miss: **the dot has to land on the fish**, because that is how the fish is
+ranged. The dot sits at scene radius `|O|` from the optical axis at every distance, so a
+measurable fish is always near the axis, and only its own extent reaches outward. We
+verified this on 227 production frames carrying both a dot and head/tail landmarks: the
+dot falls inside the body span in **100 %** of them, at 0.40–0.65 of the body length
+from the tail, median 0.52. Section 4.2 shows what that does to the error.
 
-The tolerance follows from the application. For a worst-case length error ε at range
-Z, differentiating `Z = |O| / (p − p_D)` — where `p` is the dot's position along its
-locus in the corrected image and `p_D` the locus position of `D` — gives
-
-    |δp_D| ≤ ε · |O| / Z.
-
-The budget is therefore a property of the rig, not of this paper: it scales as `|O|/Z`,
-so a shorter baseline or a longer working range tightens it proportionally. For our
-`|O|` = 104 mm at 4 m it is 3.9 mrad -- **12 px** at our focal length -- for a 15%
-tolerance, and 1.3 mrad or 4 px for 5%. The same expression bounds `|δ|O||` at
-`ε·|O|`. Because a deployment's tolerance is a choice and not ours to make, section 6.1
-reports achieved error against a range of tolerances rather than against a fixed line.
-
-## 4. The camera: refraction without an in-water reference
+## 4. What a flat port costs
 
 ### 4.1 A ground-truth-free test
 
@@ -190,59 +147,31 @@ Both corrections are nearly flat over the same span and end well below uncorrect
 (Radial bins containing fewer than 200 corners are not used: a board reaches the
 extreme corners only occasionally, and a median over a handful of corners is noise.)
 
-### 4.2 What it costs in length, and why the obvious measurement understates it
+### 4.2 What it costs in length, once the laser geometry is accounted for
 
-Converting the residual to a length error requires care, because there are two such
-errors and they differ by about fifty times.
+[TODO: rewrite in full. The structure is settled and the numbers are computed; what
+remains is prose.
 
-A laser–camera rig reads *range* from a dot that sits near the optical axis, and
-*extent* from a fish that can be anywhere in the frame. The two halves of one
-measurement are therefore sampled at different field positions.
-
-The **local** error is the distortion across the fish's own extent at one field
-position. It is a second difference, and a homography absorbs the first-order scale,
-so it is small: 0.37% uncorrected on a 297 mm fish.
-
-The **differential** error is the difference in magnification between the fish's
-field position and the laser dot's. It is first order and it dominates:
-
-It also depends on **how the fish is held**, which a single number per field radius
-hides. A flat port's magnification is rotationally symmetric but not isotropic: a span
-lying along the radius is stretched by the derivative of the radial mapping, a span
-across it by the mapping itself. A horizontally-held fish meets the first case at the
-left and right of the frame and the second at the top and bottom. Uncorrected, measured
-against the in-water calibration:
-
-| fish field radius | held along the radius | held across it |
-|---|---|---|
-| 500 px | +5.9% | +1.8% |
-| 1000 px | +11.7% | +5.1% |
-| 1500 px | +22.5% | +8.9% |
-| 2000 px | +40.6% | +14.4% |
-| 2500 px | **+55.6%** | +22.1% |
-
-A factor of about three between the two columns, and the same fish at the same distance
-from the centre reads differently depending only on which way it happened to be pointing.
-
-An uncorrected flat port over-reads a fish near the frame corner by tens of percent --
-+55.6% along the radius, +22.1% across it -- and *under*-reads one closer to the axis
-than the laser dot. The sign change is as important as the
-magnitude: this is not a bias a single scale factor could absorb, because it depends on
-where in the frame the fish happened to be. Two images of the same fish, framed
-differently, give different lengths.
-
-Reporting only the local term -- which a board-diagonal test measures -- makes an
-uncorrected flat port look harmless. It is not.
-
-**Both columns are differences from the in-water SVP calibration**, which is the
-reference here and therefore reads zero by construction. We flag this because the Pinax
-column invites a reading it does not support: it is not an accuracy, it is a
-*disagreement between two corrections*, and this experiment cannot say which of the two
-carries it. The uncorrected column is established regardless -- 21% is far larger than
-any plausible disagreement between two corrections that agree to 2% -- so the cost of
-ignoring refraction is measured, while the residual 2% between SVP and Pinax is bounded
-but unattributed. Settling that needs an external length reference spanning the field,
-which this dataset does not have.
+ - The local/differential decomposition stays: range is read at the dot, extent at the
+   fish, and the second difference is small while the first-order term is not.
+ - Magnification is rotationally symmetric but **not isotropic**: a span along the radius
+   is stretched by the derivative of the radial mapping, a span across it by the mapping
+   itself, and the two differ by about a factor of three. `differential_length_error`
+   takes `extent="radial"|"tangential"`.
+ - The free-field table (+55.6 % radial, +22.1 % tangential at 2500 px, measured against
+   the in-water calibration) is **not reachable**, and saying so is the section's point.
+   The dot must be on the fish; 2500 px would put the surface ~12 cm from the port.
+ - The reachable envelope, over every (length, range) pair in the production corpus with
+   the measured dot placement and the worst bearing at each:
+       p50 1.2 %   p75 1.4 %   p90 3.0 %   p95 5.5 %   p99 11.5 %   max 14.3 %
+       over 5 %: 5.6 % of frames.  over 15 %: none.
+ - Real data agrees: the camera-only end-to-end of §6 reads +0.3 % median and 1.8 % worst
+   uncorrected, consistent with the typical rows.
+ - The design finding: this is small **for this mount**. `O` is offset near-vertically,
+   so a horizontally-held fish extends tangentially, the better case by three. A
+   horizontally offset laser would put that extent radially and be roughly three times
+   worse. The port's cost is a property of port *and* mount, which is actionable and, as
+   far as we know, unstated.]
 
 ### 4.3 A correction to the case for Pinax
 
@@ -265,7 +194,7 @@ operationally decisive, **the in-water session disappears**. Pinax's angular cor
 `γ = asin(sin α / n_w)` depends only on the water index; the port geometry enters only
 through a small lateral ray offset, negligible at survey range.
 
-### 4.4 A note on the corrective optic, which we do not model
+### 4.4 The corrective optic this replaces
 
 The reference implementation of this system does not leave the port bare. It mounts a
 Backscatter M52 Underwater 81-degree Wide Air Lens at the housing port, restoring an air
@@ -282,7 +211,7 @@ The two are alternative paths to the same place: one buys the air path in glass,
 models the water. Which is preferable is a question about availability and cost for the
 people who have to assemble the rig, not about optics, and it is not settled here.
 
-### 4.4 How a dome compares, and why accept a refractive port at all
+### 4.5 How a dome compares, and why accept a refractive port at all
 
 A flat pane is not the usual choice, and the paper would be evading its own question if it
 compared only flat-port treatments. A **dome port** whose centre of curvature coincides
@@ -321,304 +250,45 @@ sits inside a realistically-built dome.** That is a stronger claim than "the cor
 recovers most of what the pane costs", and it is the reason the choice is defensible rather
 than merely forced.
 
-## 5. The laser: reference-free per-dive calibration
+## 5. What calibrating in air enables
 
-### 5.1 The locus fixes two degrees of freedom for free
+[TODO: write. This is the paper's keystone and currently exists only as an argument, not
+as text or evidence.
 
-In normalised (direction) coordinates the beam's image is
-
-    u(t) = D + O / t,
-
-a **straight line** through `D` in the direction of `O`. The dots a dive already
-produces therefore trace a line whose orientation gives the direction of `O` and whose
-offset fixes the component of `D` across it. That is two of four degrees of freedom
-from the dots alone, with no target, no range and no scale. Measured on ten dots it
-recovers them to 0.02-0.04 deg, with a line-fit residual of 0.31 px.
-
-Those ten dots span only 2.1-7.6 deg of field angle, which invites the objection that the
-locus is fitted where the camera model is easiest. The objection does not survive the
-data. The Pinax residual is nearly flat across the frame -- 0.37 px median inside 200 px
-of the centre, 0.46 px at 1800 px -- and the decoy session behind the end-to-end result of
-section 6.1 spans **2.9 to 39.6 deg**, dots landing from 149 px out to 2162 px. The
-method is not confined to a central patch; it is exercised across most of the frame.
-
-What the line cannot fix is where `D` sits *along* it — the `t → ∞` asymptote — and the
-magnitude `|O|`. Together these set the parameterisation `s = |O| / t` of position
-along the line: sliding `D` along the line while rescaling every range leaves every dot
-where it was. This is monocular scale ambiguity, and no amount of dot reprojection
-refinement can touch it.
-
-### 5.2 Apparent size breaks the gauge
-
-Any *ratio* of two dot ranges breaks it. Known ranges supply one; so does a rigid
-object of **unknown** size. Its apparent size obeys `ℓ ∝ 1/Z`, and the dot on it sits
-at `p = p_D + |O| / Z`, so
-
-    p_i = p_D + (|O| / k) · ℓ_i,
-
-a straight line in (apparent size, position along locus) whose **intercept is the
-vanishing point** `p_D` — the position at which the object would shrink to nothing.
-No known range, no known size, no mount prior. `|O|`, measured once on a bench, then
-sets absolute scale, and the object's true size falls out as a by-product.
-
-Two frames of one object suffice; a dive's worth averages. The conditioning mirrors the
-two-range case: the estimator needs leverage in `ℓ`, i.e. range spread.
-
-The dimension used matters. A fish's *length* is foreshortened by yaw, one-sidedly,
-and the estimator reads foreshortening as extra range. Its *height at the dot* is not
-changed by yaw. We use height, obtained from a segmentation mask.
-
-### 5.3 Scope: what the flat port contributes, and what it does not
-
-The pairing of these two halves invites a stronger claim than we make, so we state the
-limit plainly.
-
-The locus argument of section 5.1 is **pinhole geometry**. It holds for any camera whose
-pixels map to known scene rays, and the apparent-size argument of section 5.2 is ordinary
-perspective. Neither depends on the port being flat. What section 4's correction supplies
-is the pixel-to-ray map: without a correct map the dots do not lie on a straight line and
-the estimator has nothing to fit. A dome port needs such a map too, and being very nearly
-central it obtains one more easily.
-
-**So the flat port is load-bearing for the camera half and not for the laser half.** We
-tested the one route by which it could have been load-bearing for both — an axial camera
-is not scale-invariant, so in principle the port itself supplies range and the method
-becomes entirely self-contained — and it fails for this housing by two orders of
-magnitude (section 7).
-
-This is a limitation of the framing and a generality of the method: a dome-ported rig can
-adopt section 5 unchanged, and still needs its own answer to section 4.
+ - Underwater behind a flat pane the camera is axial: no single viewpoint. Multi-view
+   calibration and structure-from-motion assume a central camera, so they do not apply
+   without solving refractive SfM.
+ - In air the camera is central, exactly. So every in-air method is available, and the
+   choice of target is no longer constrained to a plane whose pitch has been measured.
+ - A commodity three-dimensional target — interlocking bricks — is *better conditioned*
+   than a checkerboard, not merely cheaper: a planar target carries known degeneracies,
+   which is precisely why our own `fx/fy` question (§8) cannot be settled from this
+   dataset, every frame sitting within 34° of one axis. A 3D target breaks that by
+   construction.
+ - It is also more accurate as a reference. A printed board carries a ±1.2 % pitch
+   tolerance and ours measured 0.5 % oversize with a disputed anisotropy; moulded bricks
+   hold ~±0.01 mm on an 8 mm pitch, published and identical worldwide, and need no
+   measuring at all.
+ - Status: a pilot is being shot. Report it or state it as enabled-but-untested; do not
+   claim it works until it has.
+ - Building and grading the target itself belongs to the deployability paper; what is
+   claimed here is the enablement.]
 
 ## 6. Evaluation
 
-### 6.1 End to end: no reference object in the water
+[TODO: rewrite around the camera-only end-to-end, which is the experiment that isolates
+the port. Each camera model calibrates the laser with itself and then measures the
+board's 549.0 mm span, so the pipeline is internally consistent, as a deployment's would
+be. Ten frames, 1.08–4.48 m:
 
-The claim of the paper is that a rig can be calibrated without putting a reference object
-in the water. We test it directly. The camera is calibrated from the in-air session alone
-and corrected with Pinax. The laser is calibrated from the **decoy session alone**, using
-only the apparent body height of a swinging fish-shaped object whose size was never
-measured. Both are then used to measure the **checkerboard** -- 549 mm along its long axis,
-calipered corner to corner, which appears in neither *laser* calibration -- over ten
-frames at 1.1-4.5 m.
+    median   Uncorrected +0.3 %   In-water SVP -0.2 %   Pinax -0.3 %
+    worst    1.8 %                1.6 %                 1.6 %
 
-**What this does and does not put under test.** The board is held out of the laser
-calibration, but it is the object the camera was calibrated on and, through the garage
-beam fit's poses, the origin of `|O|`'s scale. So an error in the board's assumed size
-propagates into `|O|`, into every range, and into the measured span -- where it cancels
-against a ground truth that scaled with it. We verified this is exact rather than
-approximate: scaling the assumed board pitch from 0.95x to 1.10x moves `|O|` from 98.98 mm
-to 114.61 mm and leaves the error at +2.24% throughout.
-
-This experiment therefore measures the laser's **angular** calibration and the refraction
-correction, and is blind to absolute metric scale. That is the right target -- angle is
-what drifts between dives, and section 3's budget is a bound on angle -- but it is not a
-metric accuracy result, and section 6.2 supplies the scale test separately.
-
-Three baselines bracket the result. *No per-dive calibration* uses the bench beam measured
-in air 48 minutes earlier: what a rig does if it trusts its extrinsics. *Conventional* is
-the board-referenced beam fit, the slate equivalent -- scored **in-sample**, on the very
-frames it was fitted to, so it is an optimistic bound rather than a fair competitor. The
-reference-free row is scored two ways: across sessions (the decoy precedes the board frames
-by ten minutes and one handling event, so it carries real drift) and leave-one-frame-out
-within a session, which isolates the estimator from drift but calibrates and tests on the
-same object, and is therefore an optimistic bound of its own rather than an independent
-result.
-
-| laser calibration | median | p90 abs | max abs |
-|---|---|---|---|
-| none -- bench beam, 48 min earlier | -5.4% | 8.4% | 15.8% |
-| **reference-free, cross-session** | **+0.0%** | 1.2% | 2.6% |
-| **reference-free, leave-one-out** | **+1.0%** | 1.8% | 2.7% |
-| conventional slate (in-sample, optimistic) | -0.3% | 1.5% | 1.6% |
-
-The board's pitch is measured, not assumed: 42.2308 mm along the long axis and 42.1111 mm
-along the short, so the object model is the calipered one and the target span is 549 mm
-rather than the nominal 546.0. It is the same physical board in both sessions. The result
-does not rest on that: across three assumed geometries spanning 1.4% -- nominal, an
-earlier edge-to-edge reading, and this one -- these rows move by at most 0.5 pp.
-
-Because a deployment's tolerance is a choice, we report the same result against tolerance
-rather than against a fixed line -- the fraction of frames within each requirement:
-
-| laser calibration | 2% | 5% | 10% | 15% |
-|---|---|---|---|---|
-| none -- bench beam | 0% | 40% | 80% | 90% |
-| **reference-free, cross-session** | 90% | **100%** | 100% | 100% |
-| **reference-free, leave-one-out** | 90% | **100%** | 100% | 100% |
-| conventional slate (in-sample) | 100% | 100% | 100% | 100% |
-
-The reference-free pipeline meets a 5% requirement on every frame, including across a
-handling event it was given no chance to observe; the same rig without a per-dive
-calibration meets it on two frames in five.
-
-The reference-free row matches the in-sample slate, which deserves scepticism rather than
-celebration, so we separate the two things it contains. The beam *direction* recovered
-from the decoy still differs from the board session's by 0.261 deg -- real drift over ten
-minutes and a handling event, which no estimator can undo. What the size measure fixes is
-the *estimation* error in the vanishing point, from 3.7 px to 0.2 px. The drift that
-remains lies mostly across the locus rather than along it, and only the along-locus
-component reaches the range. Not all drift costs a measurement.
-
-One systematic appeared in the reference-free and conventional rows alike when the board
-was assumed square: its long-axis span read 0.4 percentage points differently from its
-short-axis span. Section 8 reports what that turned out to be.
-
-### 6.2 Absolute scale, against an independently calipered object
-
-Section 6.1 is blind to scale by construction. The decoy supplies the missing test,
-because its dimensions were calipered directly -- 312.5 mm long, 106.1 mm deep just aft of
-the dorsal fin -- and so are independent of the board and of everything in the calibration
-chain. Reading the decoy's own metric length back out of the reference-free pipeline:
-
-**311.2 mm, against 312.5 mm calipered: -0.4%.**
-
-Aggregated at p90 over the thirteen frames rather than by mean, because yaw foreshortens
-one-sidedly and a mean would measure the decoy's pose distribution rather than the decoy.
-Unlike section 6.1 this chain -- calipered object, ranges, beam, `|O|`, the garage board's
-poses -- responds one-for-one to an error in the board's assumed size, so it is a genuine
-test of absolute scale, and the rig passes it at half a percent.
-
-The same reconstruction recovers the decoy's body-height profile, which peaks at 109.4 mm;
-the calipered 106.1 mm falls on it 8% of a body length aft of the deepest point, which is
-where "just behind the dorsal fin" should land. Shape and scale are both recovered, from a
-calibration that never saw a ruler in the water.
-
-### 6.3 Pool: a board of unknown size
-
-Treating the checkerboard as an anonymous rigid object (√ convex-hull area of its
-corners in corrected coordinates, tilt left in, its 42 mm pitch never used), ten frames
-at 1.08–4.47 m give:
-
-- vanishing point **0.31 px** from the slate-calibrated reference (fit RMS 1.15 px);
-- beam direction **0.009°**;
-- recovered object size 0.460 m against a true 0.454 m.
-
-Against the 12 px budget of §3 this is a 40× margin. Pairwise conditioning:
-
-| range ratio | pairs | median `p_D` error | in budget |
-|---|---|---|---|
-| 1.0–1.3 | 15 | 10.3 px | 9/15 |
-| 1.3–1.7 | 15 | 4.5 px | 15/15 |
-| 1.7–2.5 | 8 | 1.9 px | 8/8 |
-| > 2.5 | 7 | 0.5 px | 7/7 |
-
-### 6.4 Pool: a fish-shaped object that moves
-
-The same dive carries a second laser session on a fish decoy (312.5 mm, measured)
-hanging on a line, free to yaw: 13 frames, 0.8-3.3 m, the dots spanning 2.9-39.6 degrees
-of field. Masks come from a text-prompted
-segmentation model ("fish") on a crop centred on the dot -- the same backend the
-deployment already runs for head/tail keypointing, so it is not a new dependency here,
-though it is a heavy one for a method sold on deployability. Two lighter attempts failed
-first and are worth recording: chroma thresholding against the pool wall, and GrabCut
-seeded by the dot, both bloated into the background by 10-20% because the camera's
-underwater white balance leaves the flank and the water the same hue. A fish will present
-the same problem. Comparing the two size
-measures:
-
-| size measure | `p_D` vs reference | leave-one-out sd | fit residual |
-|---|---|---|---|
-| **sqrt(mask area)** | **0.2 px** | 0.5 px | 2.4 px |
-| body height at the dot | 3.7 px | 2.1 px | 15.6 px |
-| snout-to-tail length | 12.2 px | 1.7 px | 10.6 px |
-
-The area wins because it uses every pixel of the silhouette, while any chord inherits
-whatever the chord is drawn through. Height at the dot inherits the dot's wander along the
-body -- 0.107 of a body length between frames here, worth 6.5% of the height on its own --
-and that noise propagates straight into the intercept. Measured frame-to-frame consistency:
-1.1% for the area against 6.5% for the height at the dot.
-
-The caveat is the failure mode named below. Silhouette area falls off with yaw, so if a
-diver's approach angle were correlated with range -- head-on far away, side-on close in --
-the area would carry exactly the range-correlated bias that reaches the vanishing point.
-Here it is not, and the noise reduction dominates; on a survey dive it should be checked.
-
-Height closes the beam inside budget; length fails exactly as predicted, because the far
-frames are the oblique ones. Per-frame scatter is 10-16 px -- the decoy swings -- yet the
-intercept is stable to 2 px: the line fit averages pose noise.
-
-**The size by-product is the method's noisiest output, and it is not how the pipeline
-measures anything.** This needs saying because the paper reports two very different numbers
-for the decoy's length. The **by-product** is the single parameter `k = |O|/slope` fitted
-across all frames: 274 mm, 12% short. The **measurement** is the per-frame reconstruction
-`l * Z` aggregated at p90, which is what a deployment actually computes and what section
-6.2 reports: 311.2 mm, 0.4% short. In an exact model the two coincide; they differ here
-because the model is not exact and a least-squares slope is a far noisier estimator than a
-robust aggregate of per-frame products. Validate the pipeline on the measurement, never on
-the by-product.
-
-The same gap explains the depth numbers. The decoy's body height, calipered afterwards, is
-106.1 mm; the by-product returns 99.7 mm from height at the dot and 112.4 mm from maximum
-body height. Neither is a calibration error, because the estimator is **exactly invariant to a
-constant scale error in the size measurement**: in `p = p_D + (|O|/k) * l`, replacing `l`
-by `c*l` for any constant `c` leaves the intercept `p_D` untouched and moves only the
-slope, hence only the recovered `k`. Scaling every measured size by 1.06, 0.85 or 2.5
-moves `p_D` by less than 0.001 px. So whether the segmentation mask includes the dorsal
-fin, and where along the body one chooses to measure, are absorbed entirely by the
-by-product.
-
-What is *not* absorbed is a **range-correlated** bias, and that distinction turns out to
-matter more than goodness of fit. Maximum body height is the more self-consistent measure
--- 5.8 px fit residual against 15.6 px, because the dot wanders over 0.107 of the body
-length between frames and takes the local height with it -- but it is the *worse*
-calibrator, giving +5.1% median and 11.4% worst end to end against +2.2% and 3.5% for
-height at the dot (section 6.1). A size measure that is consistent frame to frame is not
-thereby free of a trend with range, and only the trend reaches the vanishing point. Fit
-residual is therefore not a model-selection criterion here; a held-out target is.
-
-### 6.5 An independent production corpus
-
-We re-ran the estimator on 2,927 frames over 32 dives from an independent deployment of
-the same measurement pipeline, where per-dive calibrations had been produced
-conventionally and lengths validated against known references. This is a **cross-check on
-independently collected data, not an independent validation**: our estimator and the
-reference fit run on the same frames and the same objects, so what it establishes is
-agreement between two estimators, one of which spends known lengths and one of which does
-not. The housings in that deployment are not all of the type studied in section 4, which
-makes the section a test of section 5 alone -- consistent with its being port-independent
-(section 5.3). Expressing our estimator
-in that pipeline's own in-plane-angle parameterisation φ and comparing against its
-known-length fit:
-
-| reference object | φ (ours) − φ (known-length) | cells |
-|---|---|---|
-| **Box** (slab) | **+0.003° median, 0.016° MAD** | 10 |
-| trout model | +0.080° → −0.005° after thickness correction | 11 |
-| Snook model | +0.100° | 1 |
-| Shark model | +0.268° | 2 |
-
-On a slab, spending no known length, the estimator reproduces a known-length
-calibration to 0.003°. On the other targets it disagrees, and the disagreement orders
-with the targets' thickness.
-
-### 6.6 The failure mode, stated
-
-A size measured off a surface the dot does not lie on carries a term in `1/z`. The dot
-lands on a solid object's **flank** while the landmarks used for size lie nearer its
-**midplane**, so the measured size is short by roughly the half thickness over the
-range. A scale-free estimator operating on size cannot distinguish such a term from a
-rotated laser, and will rotate the laser to cancel it.
-
-**We do not claim the observed disagreement is that term.** The ordering is consistent
-with thickness, but each target in the corpus was measured on its own sessions, so a
-per-target `1/z` coefficient cannot be separated from whatever range dependence those
-sessions' calibrations retain -- the point that corpus's own authors make, and they
-decline the attribution for the same reason. Their fit is also quantitatively awkward
-for a pure thickness story: the solid trout's coefficient is about five times smaller
-than its measured 58.7 mm across the body predicts, while a flat plate shows a larger
-one. We report the disagreement, name the mechanism it is consistent with, and leave
-the attribution open.
-
-What survives without the attribution is the design rule, which is what the method
-needs: **the size fed to the estimator must be measured on the surface the dot lands
-on, and must not drift with range.** Any size measure that is systematically wrong in
-a way correlated with distance -- for whatever reason -- moves the vanishing point,
-and no amount of averaging removes it. Section 6.4 gives the measured case: a size
-measure that is more self-consistent can still be the worse calibrator.
-
-Our own decoy test is not exposed to the session confound in the same way, because
-there the same object calibrates and is measured within a single session; but it is a
-single object, so it cannot separate the mechanisms either.
+  The honest reading is that on *this* data the correction buys little, because the board
+  sits at 175–843 px where the differential term is small — which is the same fact §4.2
+  establishes, seen from the other side, not a contradiction of it. Say so. The claim the
+  data supports is that the correction removes a term that is small in the median and
+  reaches a third of the budget in the close-range tail, not that it rescues the system.]
 
 ## 7. Negative results
 
@@ -638,52 +308,27 @@ range) but it sits two orders of magnitude under the model-mismatch floor for th
 housing. Frames under 0.5 m, or a deliberately loose port, would change this — the
 latter in direct tension with Pinax.
 
-**A prior on the mount cannot replace the object.** The locus fixes two of the beam's
-four degrees of freedom, so a mount constrained to one degree of freedom would close it
-outright — no range, no object, nothing but the dots. This is the one alternative to
-section 5.2 that would need no scene content at all, so it has to be ruled out before
-the apparent-size route is justified.
-
-It does not survive the check. Constraining `D` to the circle the design axis implies —
-parallel to the optical axis, radius fixed by one bench measurement — places `D` 12 px
-off at best, which is 15.6 % at 4 m: over budget, with no margin. The two sessions we
-have disagree about that radius by far more than their own fit noise, so the prior is
-not merely imprecise but unsupported by the data available to us.
-
-We stop there deliberately. Establishing *how* the mount actually moves — whether its
-freedom is one degree or several, and with what distribution — is a characterisation of
-the hardware, it needs the per-dive extrinsics of many units rather than the dots of
-one dive, and it is the subject of separate work. The conclusion this paper needs is
-only the negative one: no mount prior available to us closes the beam, so the size of
-something in the scene is doing real work. The design axis remains useful within this
-paper as a branch-resolver for the locus's sign ambiguity and as an outlier gate.
+**The port's cost is not the port's alone.** Section 4.2's envelope is small partly
+because this rig's laser is offset almost vertically, so a horizontally-held fish extends
+across the radius rather than along it. The same port with a horizontally offset laser
+would be roughly three times worse. A negative result for anyone reading a flat port's
+cost off the port alone.
 
 ## 8. Limitations
 
 - **One camera, one housing, one pool.** The refraction results are a matched pair with
   no confound, but `n = 1` in every other sense, and the pool's index was assumed, never
   measured.
-- **Small dot counts.** Ten and thirteen dots for the two pool sessions, and the
-  best-conditioned row of section 6.2 rests on seven pairs drawn from those ten, which are
-  not independent. The production corpus is larger but was collected for another purpose.
-- **The decoy comparison has no independent truth.** Its reference is a slate
-  calibration from the same dive ten minutes and one handling event later, so the
-  3.8 px includes real drift and is an upper bound, not the method's error.
-- **`|O|` is still measured once.** The method is reference-free per dive, not
-  calibration-free, and `|O|` error enters range 1:1. Between our own two sessions the
-  fitted baseline differs by about a millimetre, which is inside the budget here but
-  would not be at a tighter tolerance. How stable that baseline is in general is a
-  property of the mount and is not characterised in this paper; a deployment that needs
-  it tighter should use the two-range closure of section 5, which recovers `|O|` per
-  dive instead of trusting it.
-- **Range spread is required, and we have not measured how often it occurs.** A dive whose
-  objects were all photographed at one range cannot be calibrated this way; section 6.2
-  shows conditioning becoming reliable past a range ratio of about 1.3 (section 6.3). Our pool sessions
-  were arranged to span 1.1-4.5 m. Whether an unscripted survey dive supplies one rigid
-  object at two clearly separated ranges is a protocol question we state rather than
-  answer, and it is the main obstacle to deploying this unsupervised.
-- **Fish are not rigid.** Our fish-shaped validation object is a rigid lure. Body
-  height at the dot is robust to yaw but not to a bending body.
+- **The reachable envelope is computed, not measured, at its tail.** The p99 and maximum
+  of §4.2 come from simulating each real (length, range) pair; our own photographs never
+  put a known target in the close-range oblique geometry where the error is largest, and
+  the rig cannot be made to — the dot would have to land on a surface 12 cm away. The
+  median and p90 are corroborated by §6; the tail is not.
+- **Fish bearing is unobserved.** The envelope maximises over it because the corpus does
+  not record it. A distribution over real poses would narrow the tail, probably a lot.
+- **The water index was assumed.** Fresh water throughout, never measured, and the
+  salinity adaptability the model is often credited with is untested here.
+
 - **A 1% `fx/fy` anisotropy we can characterise but not yet attribute.** With a nominal
   square object model our in-air calibrations return `fx/fy` = 0.9931, and the production
   fleet returns 0.99141 +- 0.00044 across seven cameras from seven independent
@@ -713,22 +358,9 @@ paper as a branch-resolver for the locus's sign ambiguity and as an outlier gate
 
 ## 9. Conclusion
 
-A laser-camera rig can be calibrated without putting any reference object in the water,
-by two arguments that hold for different reasons. The camera half follows from the axial
-geometry of a flat port: an in-air calibration plus an analytic correction, whose
-advantage over an in-water calibration is not geometric accuracy but the removal of the
-in-water session and a 2.1x noise penalty. The laser half follows from the structure of
-the dot locus, which is pinhole geometry and therefore not specific to any port: two of
-four degrees of freedom are free, and the remaining scale gauge is broken by the apparent
-size of whatever the dot lands on -- the dive's own subjects, of unknown size.
-End to end, with no reference object ever entering the water, the rig measures a held-out
-549 mm target to +0.0% median and 2.6% worst case across 1.1-4.5 m -- inside a 5%
-requirement on every frame -- where the same rig without a per-dive laser calibration reads
--5.4% median and 15.8% worst. That comparison isolates the angular calibration, which is
-what drifts between dives; absolute scale, tested separately against a calipered object,
-comes back within 0.4%. Component-wise the estimator recovers the beam to 0.009 deg in a
-pool and to 0.003 deg on a production corpus where the reference object is a slab. Where
-it fails, it fails for a stated reason with a stated remedy.
-
-[TODO: implications for citizen-science deployment; future work — dome ports, in-situ
-salinity, bending bodies.]
+[TODO: rewrite. The shape: a flat port's refraction can be modelled rather than
+cancelled in glass, which removes a part, a step and a silent failure class from the
+dive, and moves the calibration target out of the water. What it costs is modest and now
+quantified against the geometry the rig can actually produce. What it buys, beyond that,
+is centrality: in air the camera is a pinhole, and the methods and targets that follow
+from that are not available underwater at all.]
