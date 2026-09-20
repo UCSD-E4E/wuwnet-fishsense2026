@@ -12,7 +12,11 @@ an uncorrected flat port look harmless.
 import numpy as np
 import pytest
 
-from fishsense_wuwnet.pipelines import differential_length_error
+from fishsense_wuwnet.pipelines import (
+    back_project_pinax,
+    back_project_uncorrected,
+    differential_length_error,
+)
 
 PRINCIPAL = (2007.0, 1508.0)
 RADII = np.linspace(10.0, 2500.0, 40)
@@ -185,3 +189,60 @@ def test_length_error_depends_on_how_the_fish_is_held():
 
     with pytest.raises(ValueError, match="radial"):
         differential_length_error(uncorrected, pinax, extent="diagonal", **kw)
+
+
+# --------------------------------------------------------------------------
+# What an uncorrected flat port does to range, as against length
+# --------------------------------------------------------------------------
+#
+# Section 4.2 discloses that an uncorrected port reports range a quarter short
+# while reporting length correctly. The two facts are one fact: the same factor
+# inflates the angular extent and shrinks the range, and they cancel. It is
+# pinned here because it is the kind of claim that is invisible to every number
+# the paper reports -- length cancels it -- so nothing else in the suite would
+# notice it drifting.
+
+
+def _port_rig():
+    from fishsense_wuwnet.refraction import SWEET_WATER, FlatPort, optimal_d0
+
+    width, height, focal = 4014, 3016, 2850.0
+    camera = np.array([[focal, 0, width / 2], [0, focal, height / 2], [0, 0, 1.0]])
+    half_fov = np.arctan(np.hypot(width / 2, height / 2) / focal)
+    d0, cop, _ = optimal_d0(0.006, 1.49, SWEET_WATER, half_fov)
+    return camera, FlatPort(d0, 0.006, 1.49, SWEET_WATER), cop
+
+
+def _dot_range(depth, back_project, camera, port):
+    """Range the model reports for a dot on the beam at `depth`."""
+    from fishsense_wuwnet.refraction import (
+        alpha_azimuth_to_pixel,
+        project_water_points,
+        reconstruct_points,
+    )
+
+    beam_origin, beam_axis = np.array([0.0, -0.104, 0.0]), np.array([0.0, 0.0, 1.0])
+    point = (beam_origin + depth * beam_axis)[None, :]
+    alpha, azimuth = project_water_points(point, port)
+    pixels = alpha_azimuth_to_pixel(alpha, azimuth, camera)
+    origin, direction = back_project(pixels)
+    recovered, _ = reconstruct_points(direction, origin, beam_origin, beam_axis)
+    return float(np.ravel(recovered[:, 2])[0])
+
+
+def test_an_uncorrected_port_reports_range_a_quarter_short():
+    """And flat with distance, because it is 1/n_w and nothing else."""
+    from fishsense_wuwnet.refraction import SWEET_WATER
+
+    camera, port, _ = _port_rig()
+    expected = 100 * (1 / SWEET_WATER - 1)  # -25.0 %
+    for depth in (0.75, 1.5, 3.0, 4.5):
+        got = _dot_range(depth, lambda px: back_project_uncorrected(px, camera), camera, port)
+        assert 100 * (got / depth - 1) == pytest.approx(expected, abs=0.7)
+
+
+def test_the_correction_puts_the_range_back():
+    camera, port, cop = _port_rig()
+    for depth in (0.75, 1.5, 3.0, 4.5):
+        got = _dot_range(depth, lambda px: back_project_pinax(px, camera, port, cop), camera, port)
+        assert 100 * (got / depth - 1) == pytest.approx(0.0, abs=0.1)

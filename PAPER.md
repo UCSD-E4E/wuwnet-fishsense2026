@@ -220,6 +220,20 @@ remains is prose.
    Presenting the table this way costs nothing and is what makes the transfer claim
    checkable rather than rhetorical.]
 
+**And what it costs in range, which is not the same answer.** The cancellation above is
+specific to length. Read the *range* out of the same reconstruction and an uncorrected
+flat port is **25.0 % short**, flat with distance — it is `1/n_w - 1`, and on the pool
+frames it puts the board at 0.88 m where both corrected models put it at 1.20 m. Nothing
+in a length measurement reveals this, because the same factor inflates the angular extent
+by exactly as much as it shrinks the range, and the two cancel.
+
+It does not affect any number in this paper. FishSense Lite delivers a length; range is an
+intermediate, and §6 shows the three camera models agreeing on length to within 1.8 %
+precisely because of that cancellation. We state it because single-laser ranging is
+established practice in ROV survey work, so a reader may reasonably expect range to be an
+output of a rig like this one — and if it ever becomes one here, an uncorrected port is
+wrong by a quarter from the first frame.
+
 ### 4.3 A correction to the case for Pinax
 
 Median homography residuals are: uncorrected 2.85e-4, in-water SVP 1.17e-4, Pinax
@@ -403,10 +417,11 @@ as text or evidence.
 
 ## 6. Evaluation
 
-[TODO: rewrite around the camera-only end-to-end, which is the experiment that isolates
-the port. Each camera model calibrates the laser with itself and then measures the
-board's 549.0 mm span, so the pipeline is internally consistent, as a deployment's would
-be. Ten frames, 1.08–4.48 m:
+[TODO: rewrite around the camera-only end-to-end. It does **not** isolate the port —
+saying so was backwards, and the figure now contradicts it. What it shows is that at
+reachable geometry the port is nearly invisible in length: each camera model calibrates
+the laser with itself and then measures the board's 549.0 mm span, so each pipeline is
+internally consistent, and all three land. Ten frames, 1.08–4.48 m:
 
     median   Uncorrected +0.3 %   In-water SVP -0.2 %   Pinax -0.3 %
     worst    1.8 %                1.6 %                 1.6 %
@@ -545,6 +560,8 @@ in that state.
 | §4.2 | `pool-differential-magnification-at-fish-vs-at-laser-dot-line-fish-along-the` | final |
 | §4.2 | `sim-flat-port-error-vs-field-angle-by-focal-length` | final |
 | §4.2 | `sim-length-error-vs-field-position-0-3-m-fish-at-2-0-m` | final |
+| §4.2 | `sim-uncorrected-range-error-vs-length-error` | final |
+| §4.2 | `pool-range-by-camera-model` | final |
 | §4.3 | `sim-in-water-svp-length-error-vs-range-by-housing-geometry` | final |
 | §4.3 | `sim-length-error-from-calibration-noise-300-trials` | final |
 | §4.3 | `sim-range-error-vs-distance-noise-free` | final |
@@ -556,9 +573,10 @@ in that state.
 | §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
 | §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** |
 | §6 | `pool-end-to-end-board-span-by-camera-model` | final |
+| §6 | `pool-decoy-length-by-camera-model` | final |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final |
 
-Three of 18 are placeholders. Two await photographs of the built calibration target:
+Three of 21 are placeholders. Two await photographs of the built calibration target:
 the detector currently runs on rendered views only. The third is §5's, which compares
 the two in-air targets against each other and so cannot be drawn until the brick
 target has been shot; its axes are real -- the pool session's range spread, the
