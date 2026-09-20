@@ -296,6 +296,35 @@ as text or evidence.
  - Building and grading the target itself belongs to the deployability paper; what is
    claimed here is the enablement.
 
+ CLOSE THE LOOP. "Good enough to replace the wet session" now has a number, from a
+ simulation that shares no code between the forward model and the inverse: the exact
+ axial projection images the scene, Pinax inverts it, and only the inverse is given
+ the wrong intrinsics. Written up as tests/test_calibration_budget.py.
+
+ - Report the two regimes, because they have **opposite** sensitivities and getting
+   them the wrong way round would mean optimising the target for the wrong parameter.
+   Trusting the laser's bench extrinsics, range and extent scale together so a focal
+   error cancels out of the length (5 % of focal length -> 0.1 % of length) while the
+   principal point is ruinous (5 px -> 5.5 %), because the dot's offset from the
+   principal point *is* the triangulation baseline in the image and at 4 m that offset
+   is only ~80 px. Re-fitting the beam every dive -- which is what §6 actually does --
+   absorbs the principal point almost entirely (20 px -> 0.1 %) and in the same motion
+   destroys the cancellation, so the focal error arrives one for one (5 % -> 4.8 %).
+ - So the in-air calibration's binding parameter is the **focal length**, and an
+   anisotropy reaches only the axis it lies on: `fx` 1 % high costs 1.0 % on a fish
+   held across the frame and 0.001 % on one held along it. That is the cleanest
+   statement of why the target is three-dimensional.
+ - The closing number: the measured in-air calibration (fx +0.033 %, fy +0.017 %,
+   principal point within a few px) propagates to **0.04 % of length**, against the
+   15 % worst-case budget of §8. The floor underneath every figure here is Pinax's own
+   approximation against the exact model, 0.0003 %.
+ - Two sensitivities of the target, same method. Misspecifying the brick chamfer by
+   +/-0.15 mm moves fx by less than the estimator's own scatter, so the one constant
+   that is not published precisely is not binding. Assembly slop is: about 1 % of
+   length at 0.2 mm of per-brick placement error, and it leaves the fx/fy ratio alone.
+   That is the real limit on "exact by construction" -- how well it is *built*, not how
+   well it is known.
+
  SECOND ENABLEMENT: the hardware it opens up. Argument and supporting numbers settled;
  needs writing.
 
