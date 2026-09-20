@@ -554,15 +554,22 @@ in that state.
 | §5 | `sim-target-sensitivity-to-build-quality` | final |
 | §5 | `target-detection-on-one-view` | **placeholder** |
 | §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
-| §6 | `pool-fish-length-by-in-air-calibration-target` | **placeholder** |
+| §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** |
+| §6 | `pool-end-to-end-board-span-by-camera-model` | final |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final |
 
-Three of 17 are placeholders. Two await photographs of the built calibration
-target: the detector currently runs on rendered views only. The third holds §6's
-end-to-end slot -- the pool fish measured against an in-air LEGO calibration -- and
-its plotted values are drawn from a fixed seed, not measured. Its axes are real: the
-range spread is the pool session's, the reference length the decoy's calipered
-312.5 mm.
+Three of 18 are placeholders. Two await photographs of the built calibration target:
+the detector currently runs on rendered views only. The third is §5's, which compares
+the two in-air targets against each other and so cannot be drawn until the brick
+target has been shot; its axes are real -- the pool session's range spread, the
+decoy's calipered 312.5 mm -- and its values come from a fixed seed.
+
+§5's and §6's figures are deliberately one question each. §5's varies only the target
+the camera was calibrated on, both calibrations in air and both corrected identically,
+because §5's claim is that a tower of bricks is an adequate reference. §6's varies only
+the correction, because §6's claim is about the stack end to end. An earlier draft
+varied both at once, which left the port correction as an unnamed constant in two
+series and replaced it in the third.
 
 Three finished figures about the laser's drift and its per-dive recalibration have
 been handed to **P1, the rig paper**, and now live in `correspondence/p1/figures/`:

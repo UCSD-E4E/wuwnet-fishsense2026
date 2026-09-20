@@ -28,8 +28,19 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+#: Committed caches; nothing here opens a photograph.
+DATA = Path(__file__).resolve().parent.parent / "data"
+
 from fishsense_wuwnet import figstyle
-from fishsense_wuwnet.laser import fit_beam_to_ranges
+from fishsense_wuwnet.dataset import (
+    PATTERN,
+    SQUARE_PITCH_M,
+    board_object_points,
+    cache_by_session,
+    fit_line,
+    load_corner_cache,
+)
+from fishsense_wuwnet.laser import fit_beam_to_ranges, range_along_beam
 from fishsense_wuwnet.pipelines import (
     back_project_pinax,
     back_project_uncorrected,
@@ -40,6 +51,7 @@ from fishsense_wuwnet.refraction import (
     SWEET_WATER,
     FlatPort,
     alpha_azimuth_to_pixel,
+    exit_ray,
     optimal_d0,
     project_water_points,
     reconstruct_points,
@@ -309,60 +321,204 @@ def focal_ratio_vs_views():
     return fig, "target-focal-ratio-vs-view-count"
 
 
-def pool_fish_by_calibration():
-    """Section 6 end-to-end: an in-air LEGO calibration, used to measure the pool fish.
+def target_lego_vs_checkerboard():
+    """Section 5: is a tower of bricks as good a reference as a printed board?
 
-    Holds the slot for the experiment itself. The axes are real -- the range
-    spread is the pool session's 1.08-4.48 m and the reference length is the
-    decoy's calipered 312.5 mm -- but every plotted value is drawn from a fixed
-    seed and is not a measurement.
+    One question, one axis. Both calibrations are taken **in air** and both are
+    corrected the same way, so the only thing varying is the target the camera
+    was calibrated on. That is what section 5 has to establish -- the brick
+    target being an adequate reference -- and it is not the same claim as the
+    port correction being sound, which is section 4's.
 
-    The series here are *calibration sources*, not pipelines, so
-    `figstyle.PIPELINE_STYLE` deliberately does not apply: mapping "LEGO target"
-    onto Pinax's colour would claim an identity between two different things.
-    Slots are taken from `SERIES` directly, in order, each with its own dash.
+    Holds the slot for the measurement. The range spread is the pool session's
+    and the reference is the decoy's calipered 312.5 mm; the plotted values come
+    from a fixed seed and are not measurements.
+
+    `figstyle.PIPELINE_STYLE` does not apply here, and this time that is not a
+    dodge: neither series is a pipeline. They are two targets feeding the same
+    pipeline. But they still take slots the pipelines do not own -- 5 and 6, the
+    first two `SERIES` entries `PIPELINE_STYLE` leaves free -- because a reader
+    turning from section 6 to this figure has been taught that aqua means Pinax,
+    and a target is not a correction.
     """
     rng = np.random.default_rng(11)
     ranges = np.linspace(1.08, 4.48, 13)
 
     # (label, slot, dash, marker, bias %, per-frame scatter %)
-    sources = (
-        ("LEGO target, in air", 2, "-", "o", -0.4, 0.7),
-        ("Checkerboard, in air", 1, "--", "s", 1.6, 1.1),
-        ("Checkerboard, in water (SVP)", 0, "-.", "^", 0.9, 0.9),
+    targets = (
+        ("LEGO target, in air", 5, "-", "o", -0.4, 0.7),
+        ("Checkerboard, in air", 6, "--", "s", 0.5, 0.9),
     )
 
     fig, ax = plt.subplots(figsize=(6.0, 3.4))
     ax.axhline(0.0, color="#8a8a85", lw=0.8, zorder=1)
-    for label, slot, dash, marker, bias, scatter in sources:
-        errors = bias + rng.normal(0.0, scatter, ranges.size)
-        ax.plot(ranges, errors, marker=marker, linestyle=dash, markersize=4,
+    for label, slot, dash, marker, bias, scatter in targets:
+        ax.plot(ranges, bias + rng.normal(0.0, scatter, ranges.size),
+                marker=marker, linestyle=dash, markersize=4,
                 color=figstyle.SERIES[slot], label=label, zorder=3)
 
     ax.set_xlabel("range (m)")
     ax.set_ylabel("length error (%)")
-    # Fixed, so the three sources stay separable. The 15 % budget is ten times
-    # this half-height; drawing it would flatten every series onto the axis, so
-    # it is stated instead of plotted.
     ax.set_ylim(-6.0, 6.0)
-    ax.legend(fontsize=7.4, frameon=False, loc="upper right", ncol=1)
-    ax.set_title("Pool fish length, by the target the camera was calibrated on")
+    ax.legend(fontsize=7.4, frameon=False, loc="upper right")
+    ax.set_title("Does the in-air target change the answer?")
     fig.text(0.5, 0.005,
-             "Thirteen frames of the 312.5 mm decoy over the pool session's range spread, each "
-             "measured through the flat-port\ncorrection. The deployment budget is 15 % worst "
-             "case \u2014 off scale here, ten times the half-height plotted.",
+             "Thirteen frames of the 312.5 mm decoy, both calibrations taken in air and both "
+             "corrected identically, so the\ntarget is the only difference. Section 4 settles the "
+             "correction; this settles the reference.",
              ha="center", va="bottom", fontsize=7.2, color="#52514e")
     figstyle.placeholder(
-        fig, "illustrative values \u2014 replace with the pool fish measured "
-             "against an in-air LEGO calibration")
+        fig, "illustrative values \u2014 replace with the pool fish measured against "
+             "each in-air target")
     fig.tight_layout(rect=(0, 0.17, 1, 0.92))
-    return fig, "pool-fish-length-by-in-air-calibration-target"
+    return fig, "target-pool-length-lego-vs-checkerboard"
+
+
+def pool_end_to_end():
+    """Section 6: each camera model calibrates the laser with itself, then measures.
+
+    The experiment that isolates the port. A deployment never mixes camera
+    models: whatever intrinsics calibrate the laser are the ones that then
+    measure with it, so each model here is run as its own closed pipeline.
+    Range comes from the dot, length from the frame, and the known target is the
+    board's 549.0 mm span.
+
+    Real data, not a placeholder. Ten pool frames carry both a board and a laser
+    dot; frame 244 is excluded, as it was when these numbers were first derived.
+
+    Two details matter and neither is incidental. The beam is fitted by
+    `fit_line` through the points where each dot's ray meets its own board
+    plane, then refitted after rejecting anything beyond three times the median
+    residual -- not by `fit_beam_to_ranges`, which answers a different question.
+    And the span is averaged over all ten rows of the board rather than taken
+    from one corner pair, because a single pair across a tilted board is
+    dominated by the depth difference between its ends: measured that way the
+    worst case triples.
+    """
+    objp = board_object_points()
+    corners = load_corner_cache(DATA / "board_corners_raw.npz")
+    dots = load_corner_cache(DATA / "laser_dots_raw.npz")
+
+    def calibrated(session):
+        cd = cache_by_session(corners, session)
+        names = sorted(cd)
+        _, K, dist, _, _ = cv2.calibrateCamera(
+            [objp for _ in names],
+            [cd[n].reshape(-1, 1, 2).astype(np.float32) for n in names],
+            (4014, 3016), None, None)
+        return K, dist.ravel()
+
+    K_air, d_air = calibrated("garage_lens")
+    K_water, d_water = calibrated("pool_lens")
+
+    def undistort(px, K, dist):
+        return cv2.undistortPoints(np.asarray(px, float).reshape(-1, 1, 2), K, dist).reshape(-1, 2)
+
+    def pinax(xy):
+        r = np.hypot(xy[:, 0], xy[:, 1])
+        _, gamma = exit_ray(np.arctan(r), FlatPort(0.001, 0.006, 1.49, SWEET_WATER))
+        return xy * np.where(r > 1e-9, np.tan(gamma) / np.where(r > 1e-9, r, 1.0), 1.0)[:, None]
+
+    models = {
+        "Uncorrected": lambda p: undistort(p, K_air, d_air),
+        "In-water SVP": lambda p: undistort(p, K_water, d_water),
+        "Pinax": lambda p: pinax(undistort(p, K_air, d_air)),
+    }
+
+    boards = cache_by_session(corners, "pool_lens")
+    spots = {k: v for k, v in cache_by_session(dots, "water").items() if "244" not in k}
+    frames = sorted(set(boards) & set(spots))
+    index = lambda c, r: r * PATTERN[0] + c
+    long_pairs = [(index(0, r), index(13, r)) for r in range(PATTERN[1])]
+    true_span = 13 * SQUARE_PITCH_M[0]
+
+    def beam(correct):
+        points = []
+        for n in frames:
+            u = correct(boards[n])
+            _, rvec, tvec = cv2.solvePnP(objp, u.reshape(-1, 1, 2), np.eye(3), None)
+            normal = cv2.Rodrigues(rvec)[0][:, 2]
+            d = correct(spots[n][:2])[0]
+            ray = np.array([d[0], d[1], 1.0]); ray /= np.linalg.norm(ray)
+            points.append((normal @ np.asarray(tvec).ravel()) / (normal @ ray) * ray)
+        points = np.array(points)
+        origin, axis = fit_line(points)
+        off = points - origin
+        residual = np.linalg.norm(off - (off @ axis)[:, None] * axis, axis=1)
+        return fit_line(points[residual <= 3 * np.median(residual)])
+
+    measured = {}
+    for name, correct in models.items():
+        origin, axis = beam(correct)
+        per_frame = {}
+        for n in frames:
+            u = correct(boards[n])
+            d = correct(spots[n][:2])[0]
+            z = range_along_beam(d, origin, axis)
+            rays = np.c_[u, np.ones(len(u))]
+            pts = rays * (z / rays[:, 2])[:, None]
+            span = np.mean([np.linalg.norm(pts[i] - pts[j]) for i, j in long_pairs])
+            per_frame[n] = (z, 100 * (span - true_span) / true_span)
+        measured[name] = per_frame
+
+    fig, ax = plt.subplots(figsize=(6.0, 3.4))
+    # The one line here that is ground truth: the board really is 549.0 mm
+    # across, so zero error is a measured fact rather than a fitted one. It is
+    # labelled rather than left as an anonymous grey rule -- and the x axis gets
+    # no equivalent, because every range in this figure is derived through a
+    # camera model and there is no model-free true range to mark against.
+    ax.axhline(0.0, color="#4a4a47", lw=1.0, zorder=1)
+    # Placed in the empty stretch between 2.5 and 3.3 m; at the right edge it
+    # collides with the 4.45 m readings.
+    ax.annotate("true span, 549.0 mm", xy=(0.62, 0.0),
+                xycoords=("axes fraction", "data"), ha="center", va="bottom",
+                fontsize=7.2, color="#4a4a47")
+
+    # One thin line per frame, joining that frame's three readings. The vertical
+    # spread is the disagreement in length; the HORIZONTAL run is the
+    # disagreement in range, which is the uncorrected model's real failure and
+    # is otherwise invisible -- each model derives its own range from the same
+    # dot, so the same frame lands at a different x in each series.
+    for n in frames:
+        pts = [measured[m][n] for m in models]
+        ax.plot([p[0] for p in pts], [p[1] for p in pts],
+                color="#b9b8b4", lw=0.7, zorder=2, solid_capstyle="round")
+
+    summary = []
+    for name in models:
+        ranges = np.array([measured[name][n][0] for n in frames])
+        errors = np.array([measured[name][n][1] for n in frames])
+        # Markers only. These are ten independent frames, not a series in range,
+        # and joining them along x would draw a trend that is not there. The
+        # marker shape carries the redundant encoding the dash pattern would.
+        ax.plot(ranges, errors, marker={"Uncorrected": "o", "In-water SVP": "s",
+                                        "Pinax": "^"}[name],
+                markersize=5, label=name, zorder=3, linestyle="none",
+                **figstyle.pipeline(name, line=False))
+        summary.append((name, np.median(errors), np.abs(errors).max()))
+
+    ax.set_xlabel("range to the board, from the laser dot (m)")
+    ax.set_ylabel("length error (%)")
+    ax.set_ylim(-3.0, 3.0)
+    ax.legend(fontsize=7.4, frameon=False, loc="lower right")
+    ax.set_title("Camera-only end to end: measuring a 549.0 mm span")
+    fig.text(0.5, 0.005,
+             "Ten pool frames; a grey line joins one frame's three readings, so its horizontal "
+             "run is the\nmodels' disagreement about range. The uncorrected model reads every "
+             "range 26 % short \u2014 the 1/n_w it omits \u2014 while\nthe corrected two agree "
+             "to 0.6 %. Median "
+             + " / ".join(f"{m:+.1f}" for _, m, _ in summary)
+             + " %; worst " + " / ".join(f"{w:.1f}" for _, _, w in summary)
+             + " %, in legend order.",
+             ha="center", va="bottom", fontsize=7.2, color="#52514e")
+    fig.tight_layout(rect=(0, 0.21, 1, 0.92))
+    return fig, "pool-end-to-end-board-span-by-camera-model"
 
 
 def main():
     figstyle.apply()
-    finished = [error_budget, field_angle_collapse, build_quality]
-    provisional = [detection_example, focal_ratio_vs_views, pool_fish_by_calibration]
+    finished = [error_budget, field_angle_collapse, build_quality, pool_end_to_end]
+    provisional = [detection_example, focal_ratio_vs_views, target_lego_vs_checkerboard]
     for builder in finished + provisional:
         fig, name = builder()
         paths = figstyle.save(fig, name)
