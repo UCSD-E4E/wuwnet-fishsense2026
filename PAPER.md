@@ -44,7 +44,11 @@ in the water. Both choices cost something operationally. The lens is a part to c
 fit, and purge of trapped air before the dive; that last step is invisible to the diver
 if it goes wrong, and when it does, the result is an occlusion across part of the frame
 that has cost this deployment tens of measurements and some repeated calibration work.
-And calibrating in the water means the target goes in the water.
+It is also, because it must come off to be flooded, threaded back on by hand before every
+dive -- so the calibration that included it describes one particular mounting, and a
+calibration taken with an optic that is regularly disturbed is not the same asset as one
+taken through a pane that never moves. And calibrating in the water means the target goes
+in the water.
 
 This paper removes both by modelling the port instead. That is not a new model -- the
 correction is Łuczyński et al.'s, and we implement it unchanged -- and our contribution
@@ -233,6 +237,29 @@ The two are alternative paths to the same place: one buys the air path in glass,
 models the water. Which is preferable is a question about availability and cost for the
 people who have to assemble the rig, not about optics, and it is not settled here.
 
+One asymmetry between them is structural rather than optical, and it does not depend on
+how well the optic performs. **The lens is not a fixed part of the camera.** It threads on,
+and it has to come off to be flooded, so its pose relative to the entrance pupil is
+re-established by hand before every dive. Whatever calibration was taken with it fitted
+therefore describes *that* mounting. A flat pane is bonded into the housing and is never
+removed; its geometry is fixed for the life of the housing, which is what makes a single
+in-air calibration valid indefinitely rather than until the next time the optic is
+disturbed.
+
+This matters more than it first appears, because it interacts with which intrinsic the
+measurement is sensitive to (section 5). Under the per-dive beam re-fit the system
+actually uses, a shift in the *principal point* is absorbed almost entirely -- twenty
+pixels costs a tenth of a percent of length -- so a refit that merely decentres the optic
+is nearly free. What is not absorbed is a change in effective *focal length*, which
+reaches the length one for one. So the demanding axis is the one along the optical
+axis, and on a threaded mount that is the axis set by how hard the ring was done up.
+
+**We have not measured this, and it should not be asserted without measuring.** It is not
+a dive experiment: fit the optic, calibrate in air, remove it, refit it, calibrate again,
+ten times over. The scatter in the recovered focal length *is* the repeatability, and the
+budget in section 5 converts it to a length error directly. We report the sensitivity and
+flag the quantity as open (section 8).
+
 ### 4.5 How a dome compares, and why accept a refractive port at all
 
 A flat pane is not the usual choice, and the paper would be evading its own question if it
@@ -407,6 +434,15 @@ cost off the port alone.
   not record it. A distribution over real poses would narrow the tail, probably a lot.
 - **The water index was assumed.** Fresh water throughout, never measured, and the
   salinity adaptability the model is often credited with is untested here.
+- **The corrective optic's refit repeatability is unmeasured.** Section 4.4 argues that a
+  threaded optic which must be removed to be flooded cannot be in the same place twice,
+  so a calibration taken with it fitted describes one mounting. That argument is
+  structural and we believe it; the *size* of the effect we do not know, and we are
+  careful not to imply otherwise. It is cheap to settle and needs no water -- fit,
+  calibrate in air, remove, refit, repeat -- and until someone does, the comparison in
+  section 4.4 is a statement about what has to be re-established, not about how much it
+  costs. Our own route has no removable element, so the question does not arise for it,
+  which is the only reason we can leave it open.
 
 - **A 1% `fx/fy` anisotropy we can characterise but not yet attribute.** With a nominal
   square object model our in-air calibrations return `fx/fy` = 0.9931, and the production
