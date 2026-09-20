@@ -516,11 +516,16 @@ in that state.
 | §5 | `sim-target-sensitivity-to-build-quality` | final |
 | §5 | `target-detection-on-one-view` | **placeholder** |
 | §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
+| §6 | `pool-fish-length-by-in-air-calibration-target` | **placeholder** |
 | ? | `perdive-tier-2-beam-error-vs-range-separation-of-the-pair` | final, **scope unconfirmed** |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final |
 
-Two of 19 are placeholders, both awaiting photographs of the built calibration
-target: the detector currently runs on rendered views only.
+Three of 20 are placeholders. Two await photographs of the built calibration
+target: the detector currently runs on rendered views only. The third holds §6's
+end-to-end slot -- the pool fish measured against an in-air LEGO calibration -- and
+its plotted values are drawn from a fixed seed, not measured. Its axes are real: the
+range spread is the pool session's, the reference length the decoy's calipered
+312.5 mm.
 
 Three more are marked **scope unconfirmed**. They are finished figures about the
 laser's drift and its per-dive recalibration, drawn before this became the

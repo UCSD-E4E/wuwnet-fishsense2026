@@ -309,10 +309,60 @@ def focal_ratio_vs_views():
     return fig, "target-focal-ratio-vs-view-count"
 
 
+def pool_fish_by_calibration():
+    """Section 6 end-to-end: an in-air LEGO calibration, used to measure the pool fish.
+
+    Holds the slot for the experiment itself. The axes are real -- the range
+    spread is the pool session's 1.08-4.48 m and the reference length is the
+    decoy's calipered 312.5 mm -- but every plotted value is drawn from a fixed
+    seed and is not a measurement.
+
+    The series here are *calibration sources*, not pipelines, so
+    `figstyle.PIPELINE_STYLE` deliberately does not apply: mapping "LEGO target"
+    onto Pinax's colour would claim an identity between two different things.
+    Slots are taken from `SERIES` directly, in order, each with its own dash.
+    """
+    rng = np.random.default_rng(11)
+    ranges = np.linspace(1.08, 4.48, 13)
+
+    # (label, slot, dash, marker, bias %, per-frame scatter %)
+    sources = (
+        ("LEGO target, in air", 2, "-", "o", -0.4, 0.7),
+        ("Checkerboard, in air", 1, "--", "s", 1.6, 1.1),
+        ("Checkerboard, in water (SVP)", 0, "-.", "^", 0.9, 0.9),
+    )
+
+    fig, ax = plt.subplots(figsize=(6.0, 3.4))
+    ax.axhline(0.0, color="#8a8a85", lw=0.8, zorder=1)
+    for label, slot, dash, marker, bias, scatter in sources:
+        errors = bias + rng.normal(0.0, scatter, ranges.size)
+        ax.plot(ranges, errors, marker=marker, linestyle=dash, markersize=4,
+                color=figstyle.SERIES[slot], label=label, zorder=3)
+
+    ax.set_xlabel("range (m)")
+    ax.set_ylabel("length error (%)")
+    # Fixed, so the three sources stay separable. The 15 % budget is ten times
+    # this half-height; drawing it would flatten every series onto the axis, so
+    # it is stated instead of plotted.
+    ax.set_ylim(-6.0, 6.0)
+    ax.legend(fontsize=7.4, frameon=False, loc="upper right", ncol=1)
+    ax.set_title("Pool fish length, by the target the camera was calibrated on")
+    fig.text(0.5, 0.005,
+             "Thirteen frames of the 312.5 mm decoy over the pool session's range spread, each "
+             "measured through the flat-port\ncorrection. The deployment budget is 15 % worst "
+             "case \u2014 off scale here, ten times the half-height plotted.",
+             ha="center", va="bottom", fontsize=7.2, color="#52514e")
+    figstyle.placeholder(
+        fig, "illustrative values \u2014 replace with the pool fish measured "
+             "against an in-air LEGO calibration")
+    fig.tight_layout(rect=(0, 0.17, 1, 0.92))
+    return fig, "pool-fish-length-by-in-air-calibration-target"
+
+
 def main():
     figstyle.apply()
     finished = [error_budget, field_angle_collapse, build_quality]
-    provisional = [detection_example, focal_ratio_vs_views]
+    provisional = [detection_example, focal_ratio_vs_views, pool_fish_by_calibration]
     for builder in finished + provisional:
         fig, name = builder()
         paths = figstyle.save(fig, name)
