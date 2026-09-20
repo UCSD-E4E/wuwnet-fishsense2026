@@ -1,0 +1,10 @@
+BLItemNo,ElementId,LdrawId,PartName,BLColorId,LDrawColorId,ColorName,ColorCategory,Qty,Weight
+3001,300124,3001.dat,Brick 2 x 4,3,14,Yellow,Solid Colors,31,2.32
+3001,300123,3001.dat,Brick 2 x 4,7,1,Blue,Solid Colors,26,2.32
+3001,300121,3001.dat,Brick 2 x 4,5,4,Red,Solid Colors,27,2.32
+3001,4106356,3001.dat,Brick 2 x 4,6,2,Green,Solid Colors,26,2.32
+3001,300101,3001.dat,Brick 2 x 4,1,15,White,Solid Colors,25,2.32
+,,,,,,,,,
+Total qty,Total Weight,,,,,,,,
+135,313.2
+,,,,,,,,
