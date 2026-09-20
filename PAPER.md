@@ -441,8 +441,34 @@ cost off the port alone.
   median and p90 are corroborated by §6; the tail is not.
 - **Fish bearing is unobserved.** The envelope maximises over it because the corpus does
   not record it. A distribution over real poses would narrow the tail, probably a lot.
-- **The water index was assumed.** Fresh water throughout, never measured, and the
-  salinity adaptability the model is often credited with is untested here.
+- **The water index was assumed, and this is what that can cost.** Fresh water
+  throughout, never measured, and we hold no salt-water imagery at all -- so the salinity
+  adaptability the model is often credited with is untested on anything we photographed.
+  What can be done is bound it, and `tests/test_water_index.py` does, against Quan &
+  Fry's empirical index over salinity, temperature and wavelength. Calibrating in fresh
+  water and diving in the sea costs **under 0.8 %** of length at §4.2's reachable field
+  position, worst case across 30-35 PSU and 0-30 °C. Two presets cut that to **under
+  0.3 %**, and re-centring them halves it again: 1.333 and 1.342 are round numbers
+  inherited from the Pinax paper, and each sits nearer one end of the envelope it stands
+  for than the middle of it (the midpoints are 1.3344 and 1.3406).
+
+  The asymmetry is the part worth keeping. Pinax takes the index as a parameter, so
+  adapting is a change of constant; an in-water calibration absorbs it into the fitted
+  focal length and reaches the same accuracy only by way of another session in water of
+  the right salinity. Both degrade at much the same rate when the index is wrong -- the
+  error is in the physics, not in the correction -- and what separates them is the price
+  of being right, which is the whole of this paper's argument seen from one more angle.
+
+  Two things cap how well any of this can be known, and both are unmeasured here. The
+  index depends on wavelength as much as on salinity: across the visible band it moves by
+  0.0082, the same order as the entire fresh-to-sea step, so an index quoted without a
+  wavelength is underspecified and refining one below about 0.002 is not meaningful. And
+  because water attenuates red faster than blue, the effective index for a broadband
+  silhouette climbs with range -- about 0.0018 from 1 m to 4.5 m in clear water, worth
+  0.13 pp, and *range-correlated* rather than constant, which is the category that
+  reaches the beam fit instead of cancelling against it. The laser dot is monochromatic
+  and has no such problem. In turbid water, which absorbs blue rather than red, the drift
+  reverses sign.
 - **The corrective optic's refit repeatability is unmeasured.** Section 4.4 argues that a
   threaded optic which must be removed to be flooded cannot be in the same place twice,
   so a calibration taken with it fitted describes one mounting. That argument is
