@@ -107,9 +107,18 @@ JPEG pipeline applies a radial lens correction which, measured against raw, disp
 corners by ~1 px with radius correlation +0.85 — the same functional form as the
 refraction signal, so measuring one through the other would confound them.
 
-Length is obtained as `L = ℓ_px · Z / f`, with `Z` the range read off the laser. The
-tolerance the deployment works to is **15 % on length, worst case**, so that is the bar
-every number here is held against.
+Length is obtained by back-projecting the snout and tail-fork pixels through the camera
+model, placing both at the laser-derived range `Z`, and taking the Euclidean distance
+between them. It is *not* obtained by similar triangles: the scalar form
+`L = ℓ_px · Z / f` is a first-order approximation the companion system paper rejects
+explicitly, because it assumes the fish lies along an image axis, is exact only at the
+principal point, and requires `fx = fy`. All three matter here — §4.2 covers both the
+off-axis error and how the fish is held, and §8 reports a measured ~1 % `fx/fy`
+anisotropy. Underwater the back-projection runs through the port model rather than
+`K⁻¹`, and that substitution is what this paper is about.
+
+The tolerance the deployment works to is **15 % on length, worst case**, so that is the
+bar every number here is held against.
 
 One feature of the geometry does more work than anything else in this paper, and it is
 easy to miss: **the dot has to land on the fish**, because that is how the fish is
