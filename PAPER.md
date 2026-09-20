@@ -167,10 +167,22 @@ absorbed. (With a nominally square object model the same ratio reads 1.3214; the
 not square -- section 8 -- and 1.3126 is the value from the measured geometry.)
 
 **The error is radial.** Over the well-sampled radial range the uncorrected
-homography residual climbs **5.4×**, monotonically, from the image centre to 1500 px.
+homography residual climbs **2.4×**, monotonically, from the image centre to 1370 px.
 Both corrections are nearly flat over the same span and end well below uncorrected.
-(Radial bins containing fewer than 200 corners are not used: a board reaches the
-extreme corners only occasionally, and a median over a handful of corners is noise.)
+
+Two exclusions set that range, and the second matters more than the first. Radial bins
+holding fewer than 200 corners are not used: a board reaches the extreme corners only
+occasionally, and a median over a handful of corners is noise. But the frames that *do*
+reach those corners are also not a random sample. A board fills the frame's corners only
+when it is close, and close is where a flat port departs furthest from the single
+viewpoint a homography assumes — so those 15 of 121 frames sit roughly six times higher
+at *every* radius, the image centre included. Pooling them in makes part of the curve's
+rise a change in which frames are being averaged rather than a change in radius: the
+1369–1598 px bin drew 85 % of its corners from them. The profile is therefore taken over
+the 106 frames that stay inside the well-sampled range. Pooled over all 121 the same
+curve reads 5.1×, and the difference between that and 2.4× is composition, not signal.
+The close-range frames are not discarded from the study — they are where §4.2 and §6
+live — they are simply not averaged into a radial profile they would dominate.
 
 ### 4.2 What it costs in length, once the laser geometry is accounted for
 

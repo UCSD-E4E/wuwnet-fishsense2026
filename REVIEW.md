@@ -200,6 +200,21 @@ this makes the curves conservative. A reviewer will want the *size* of the conse
 or an analysis accepting partial boards (a homography absorbs the unknown offset, so
 this is cheap).
 
+> **Updated 2026-09-20, and the ramp is now 2.4×, not 5.4×.** Looking for the size of
+> this conservatism turned up a second selection effect running the other way, and a
+> larger one. The frames that reach high radius are the close ones, and a close board is
+> where the port departs furthest from the single viewpoint a homography assumes; they
+> sit about six times higher at *every* radius, centre included. Only 15 of 121 frames
+> reach past 1598 px, and they supplied 85 % of the 1369–1598 px bin — so the pooled
+> curve's outer half was measuring a change of population, not of radius. §4.1 now takes
+> the profile over the 106 frames that stay inside the well-sampled range, which gives
+> 2.4× over 0–1370 px; pooled over all 121 it reads 5.1×.
+>
+> C3's original question stands and is unaffected: detection failure still censors high
+> radius, and accepting partial boards is still cheap. But it is now a question about a
+> 2.4× ramp, and the two effects push opposite ways — censoring makes the curve
+> conservative, pooling made it look steeper than it is.
+
 ---
 
 ## D. Minor, but they will be noticed
