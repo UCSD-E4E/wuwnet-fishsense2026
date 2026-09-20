@@ -208,3 +208,63 @@ def beam_angle(axis_a, axis_b) -> float:
     a = np.asarray(axis_a, dtype=float) / np.linalg.norm(axis_a)
     b = np.asarray(axis_b, dtype=float) / np.linalg.norm(axis_b)
     return float(np.degrees(np.arccos(np.clip(a @ b, -1.0, 1.0))))
+
+
+def fit_beam_to_ranges(directions, origins, ranges, initial=None):
+    """Beam origin and axis that best reproduce dots of *known* range.
+
+    This is what a calibration dive does: image the dot against targets whose
+    range is known, then solve for the beam that explains them. It is separate
+    from the locus routines above, which recover the beam from the dots alone;
+    what it is for is asking how a calibration *error* propagates, because the
+    beam is re-fitted through whatever intrinsics the camera was given and
+    therefore absorbs part of that error.
+
+    How much it absorbs is not a detail. Fitted this way the beam soaks up a
+    principal-point error almost entirely -- twenty pixels of it cost about a
+    tenth of a percent of length -- but in doing so it *breaks* the cancellation
+    that otherwise protects length from a focal-length error. Trusting bench
+    extrinsics, range and transverse extent scale together and a 5 % focal error
+    costs 0.1 % of length; re-fitting the beam pins the range, so the same error
+    costs 4.8 %. The two regimes have opposite sensitivities, and which term
+    binds a calibration depends on which one the deployment is in.
+
+    The fit itself is ill-conditioned, and deliberately not hidden: the camera
+    rays run nearly parallel to the beam, so the parameters slide along a valley
+    and five different starting guesses recover origins spread over almost half
+    a metre. What they predict is nevertheless identical to three decimal
+    places. The beam's parameters are not identifiable; the part of them the
+    measurement uses is.
+
+    Parameters
+    ----------
+    directions, origins : array_like
+        Camera rays for the dots, as the back-projections return them.
+    ranges : array_like
+        The true range of each dot, in metres.
+    initial : sequence of four floats, optional
+        ``(Ox, Oy, Dx, Dy)`` to start from.
+
+    Returns
+    -------
+    origin : ndarray, shape (3,)
+    axis : ndarray, shape (3,), unit
+    """
+    from scipy.optimize import least_squares
+
+    from .refraction import reconstruct_points
+
+    ranges = np.asarray(ranges, dtype=float)
+
+    def residual(parameters):
+        origin = np.array([parameters[0], parameters[1], 0.0])
+        axis = np.array([parameters[2], parameters[3], 1.0])
+        recovered, _ = reconstruct_points(
+            directions, origins, origin, axis / np.linalg.norm(axis)
+        )
+        return recovered[..., 2] - ranges
+
+    start = [0.0, -0.1, 0.0, 0.0] if initial is None else list(initial)
+    fit = least_squares(residual, start, xtol=1e-14, ftol=1e-14)
+    axis = np.array([fit.x[2], fit.x[3], 1.0])
+    return np.array([fit.x[0], fit.x[1], 0.0]), axis / np.linalg.norm(axis)
