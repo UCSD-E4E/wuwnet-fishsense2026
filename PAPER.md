@@ -492,8 +492,10 @@ from that are not available underwater at all.]
 ## Figures
 
 All are written by `uv run python refraction_analysis/make_figures.py` and
-`refraction_analysis/make_target_figures.py`, as PDF and PNG with the same stem,
-into `figures/`. **Placeholder** means the figure stands in for a measurement not
+`refraction_analysis/make_target_figures.py`, as PDF and PNG with the same stem.
+This paper's land in `figures/`; figures belonging to a sibling paper are written
+straight into that paper's handover folder, so ownership is where the generator
+puts the file rather than a note someone has to remember. **Placeholder** means the figure stands in for a measurement not
 yet taken; each carries a visible banner saying so, and must not go to camera-ready
 in that state.
 
@@ -510,26 +512,23 @@ in that state.
 | §4.3 | `sim-range-error-vs-distance-noise-free` | final |
 | §4.3 | `sim-range-error-vs-labeler-noise-by-direction` | final |
 | §4.5 | `sim-what-an-in-air-calibration-costs-by-port-type` | final |
-| ? | `drift-range-error-from-an-uncorrected-angular-scale-error` | final, **scope unconfirmed** |
-| ? | `drift-range-error-from-calibrating-the-laser-dry` | final, **scope unconfirmed** |
 | §5 | `sim-calibration-error-budget-by-laser-regime` | final |
 | §5 | `sim-target-sensitivity-to-build-quality` | final |
 | §5 | `target-detection-on-one-view` | **placeholder** |
 | §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
 | §6 | `pool-fish-length-by-in-air-calibration-target` | **placeholder** |
-| ? | `perdive-tier-2-beam-error-vs-range-separation-of-the-pair` | final, **scope unconfirmed** |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final |
 
-Three of 20 are placeholders. Two await photographs of the built calibration
+Three of 17 are placeholders. Two await photographs of the built calibration
 target: the detector currently runs on rendered views only. The third holds §6's
 end-to-end slot -- the pool fish measured against an in-air LEGO calibration -- and
 its plotted values are drawn from a fixed seed, not measured. Its axes are real: the
 range spread is the pool session's, the reference length the decoy's calipered
 312.5 mm.
 
-Three more are marked **scope unconfirmed**. They are finished figures about the
-laser's drift and its per-dive recalibration, drawn before this became the
-flat-port paper and the rig story moved to the systems paper. They are still
-true, and §6 does lean on a per-dive laser calibration for the end-to-end
-measurement; what is not settled is whether that belongs here or is cited. That
-is a scope call, not a plotting one.
+Three finished figures about the laser's drift and its per-dive recalibration have
+been handed to **P1, the rig paper**, and now live in `correspondence/p1/figures/`:
+mount movement between sessions is hardware behaviour, and this paper is about the
+port. `laser_calibration.ipynb` and `laser_per_dive.ipynb` stay here and write
+there. §6 still leans on a per-dive laser calibration for the end-to-end
+measurement, so it cites that work rather than plotting it.

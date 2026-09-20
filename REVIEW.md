@@ -385,7 +385,7 @@ sections they were about have moved out.
 **The laser work is P2's.** It removes the barrier P2's `HANDOFF.md` §1 calls
 "calibration target must be fabricated by measurement", for the laser half, by
 removing the target. Sections 5 and 6 of the old draft, and the mount-prior
-negative result, are extracted to `LASER_SECTIONS_FOR_P2.md`. The code, tests and
+negative result, are extracted to `correspondence/p2/LASER_SECTIONS_FOR_P2.md`. The code, tests and
 notebooks stay here. Rounds 1–2 items A2, B3, H2, H3 and H4 went with them.
 
 **P1 is the rig paper.** This one is about the port, and motivation that reaches
