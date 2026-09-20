@@ -61,12 +61,18 @@ runs without access to the image archive. `figures/` is generated, never edited.
 | `fishsense_wuwnet/target_render.py` | synthetic views of it, with ground truth |
 | `fishsense_wuwnet/target_detect.py` | finding it in an image, and which brick is which |
 | `refraction_analysis/` | simulation, pool validation, drift, per-dive calibration |
+| `data/` | corner and laser-dot caches — every analysis here runs from these, not from photographs |
 | `correspondence/p1/` | handed to P1, the rig paper (`imwut_2026_fishsense_lite`) |
 | `correspondence/p2/` | handed to P2, the CSCW deployability paper |
 | `correspondence/` | anything addressed to neither, such as production questions |
 
 The refraction model is self-contained — no dependency on `fishsense-pinax` — so
 this repo runs on the same Python 3.13 / OpenCV 4 stack as `fishsense-core`.
+
+`uv sync` is all that is needed to run the analysis, the figures and the tests:
+the source photographs are not in this repo and nothing here reads one. Rebuilding
+`data/` from the original ORFs is the single exception — it needs `dataset.load_raw`
+and so `uv sync --group raw`, on a Linux x86_64 machine that holds the dataset.
 
 > Łuczyński, Pfingsthorn & Birk, *"The Pinax-model for accurate and efficient
 > refraction correction of underwater cameras in flat-pane housings,"* Ocean

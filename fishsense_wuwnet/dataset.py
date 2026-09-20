@@ -332,19 +332,22 @@ BAYER_UPSAMPLE = "bilinear"
 def load_raw(path, bayer_upsample=BAYER_UPSAMPLE):
     """Open the ORF beside a JPEG as a `LinearRawImage`.
 
-    The import is function-local on purpose. `fishsense-core` publishes only
-    Linux x86_64 wheels, so this is the one entry point in the repo that does not
-    run everywhere; keeping the import here means the module, the analysis and
-    the tests all load on any platform, and only raw ORF decoding is unavailable.
+    The import is function-local on purpose. This is the only function in the
+    repo that opens a raw file, and the only one needing `fishsense-core`, which
+    is why that lives in the optional `raw` dependency group rather than in the
+    dependencies proper. Keeping the import here means the module, the analysis,
+    the figures and the tests all load with it absent.
     """
     try:
         from fishsense_core.image.linear_raw_image import LinearRawImage
     except ModuleNotFoundError as exc:  # pragma: no cover - platform dependent
         raise ModuleNotFoundError(
-            "load_raw needs fishsense-core, which ships Linux x86_64 wheels only, "
-            "so raw ORF decoding is unavailable on this platform. Everything else "
-            "in this repo runs here; work from the committed caches in data/ "
-            "instead, or re-run this step on a Linux x86_64 machine."
+            "load_raw needs fishsense-core, which is in the optional 'raw' "
+            "dependency group: install it with `uv sync --group raw`. It exists "
+            "only to rebuild the caches in data/ from the original ORF "
+            "photographs, which are not in this repo, and upstream publishes "
+            "Linux x86_64 wheels only. Every analysis here runs from the "
+            "committed caches without it."
         ) from exc
 
     return LinearRawImage(Path(path).with_suffix(".ORF"), bayer_upsample=bayer_upsample)

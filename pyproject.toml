@@ -5,11 +5,6 @@ description = "Flat-port refraction analysis for FishSense (WUWNet 2026)"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    # Only Linux x86_64 wheels exist upstream, and building from source needs a
-    # Rust toolchain. It is used by exactly one function (`dataset.load_raw`), so
-    # the rest of the repo -- refraction, laser, target, and the whole test suite
-    # -- runs anywhere. See the note in `dataset.load_raw`.
-    "fishsense-core; sys_platform == 'linux' and platform_machine == 'x86_64'",
     "ipykernel>=7.1.0",
     "ipympl>=0.9.8",
     "matplotlib>=3.10.7",
@@ -38,6 +33,21 @@ fishsense-core = [
 dev = [
     "black>=25.12.0",
     "pytest>=8.3",
+]
+
+# Needed only to REBUILD the caches in data/ from the original ORF photographs,
+# via `dataset.load_raw` -- the one function in the repo that touches a raw file.
+# Those photographs are not in this repo, so this group is useful only on a
+# machine that holds the dataset. Everything else -- the analysis, the figures
+# and the whole test suite -- runs from the committed caches with nothing here
+# installed, which is why this is a group and not a dependency.
+#
+#     uv sync --group raw
+#
+# Upstream publishes Linux x86_64 wheels only and building from source needs a
+# Rust toolchain, so the marker keeps a plain `uv sync` working everywhere else.
+raw = [
+    "fishsense-core; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
 [build-system]

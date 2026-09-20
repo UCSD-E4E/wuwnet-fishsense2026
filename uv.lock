@@ -218,7 +218,6 @@ name = "fishsense-wuwnet"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "fishsense-core", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "ipykernel" },
     { name = "ipympl" },
     { name = "matplotlib" },
@@ -236,11 +235,12 @@ dev = [
     { name = "black" },
     { name = "pytest" },
 ]
+raw = [
+    { name = "fishsense-core", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
 
 [package.metadata]
 requires-dist = [
-    { name = "fishsense-core", marker = "python_full_version != '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "fishsense-core", marker = "python_full_version == '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/UCSD-E4E/fishsense-core/releases/download/fishsense-core-v4.0.0/fishsense_core-4.0.0-cp313-cp313-manylinux_2_34_x86_64.whl" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "ipympl", specifier = ">=0.9.8" },
     { name = "matplotlib", specifier = ">=3.10.7" },
@@ -257,6 +257,10 @@ requires-dist = [
 dev = [
     { name = "black", specifier = ">=25.12.0" },
     { name = "pytest", specifier = ">=8.3" },
+]
+raw = [
+    { name = "fishsense-core", marker = "python_full_version != '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "fishsense-core", marker = "python_full_version == '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/UCSD-E4E/fishsense-core/releases/download/fishsense-core-v4.0.0/fishsense_core-4.0.0-cp313-cp313-manylinux_2_34_x86_64.whl" },
 ]
 
 [[package]]
