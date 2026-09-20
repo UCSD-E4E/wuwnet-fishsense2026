@@ -443,3 +443,43 @@ dive, and moves the calibration target out of the water. What it costs is modest
 quantified against the geometry the rig can actually produce. What it buys, beyond that,
 is centrality: in air the camera is a pinhole, and the methods and targets that follow
 from that are not available underwater at all.]
+
+## Figures
+
+All are written by `uv run python refraction_analysis/make_figures.py` and
+`refraction_analysis/make_target_figures.py`, as PDF and PNG with the same stem,
+into `figures/`. **Placeholder** means the figure stands in for a measurement not
+yet taken; each carries a visible banner saying so, and must not go to camera-ready
+in that state.
+
+| section | file stem | status |
+|---|---|---|
+| §3 | `sim-flat-port-angular-compression-2-m-salt-water` | final |
+| §3 | `sim-uncorrected-radial-error-at-the-image-plane-2-m-salt-water` | final |
+| §4.1 | `pool-homography-residual-vs-radial-position-underwater-frames` | final |
+| §4.2 | `pool-differential-magnification-at-fish-vs-at-laser-dot-line-fish-along-the` | final |
+| §4.2 | `sim-flat-port-error-vs-field-angle-by-focal-length` | final |
+| §4.2 | `sim-length-error-vs-field-position-0-3-m-fish-at-2-0-m` | final |
+| §4.3 | `sim-in-water-svp-length-error-vs-range-by-housing-geometry` | final |
+| §4.3 | `sim-length-error-from-calibration-noise-300-trials` | final |
+| §4.3 | `sim-range-error-vs-distance-noise-free` | final |
+| §4.3 | `sim-range-error-vs-labeler-noise-by-direction` | final |
+| §4.5 | `sim-what-an-in-air-calibration-costs-by-port-type` | final |
+| ? | `drift-range-error-from-an-uncorrected-angular-scale-error` | final, **scope unconfirmed** |
+| ? | `drift-range-error-from-calibrating-the-laser-dry` | final, **scope unconfirmed** |
+| §5 | `sim-calibration-error-budget-by-laser-regime` | final |
+| §5 | `sim-target-sensitivity-to-build-quality` | final |
+| §5 | `target-detection-on-one-view` | **placeholder** |
+| §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
+| ? | `perdive-tier-2-beam-error-vs-range-separation-of-the-pair` | final, **scope unconfirmed** |
+| §8 | `sim-length-error-from-a-water-index-mismatch` | final |
+
+Two of 19 are placeholders, both awaiting photographs of the built calibration
+target: the detector currently runs on rendered views only.
+
+Three more are marked **scope unconfirmed**. They are finished figures about the
+laser's drift and its per-dive recalibration, drawn before this became the
+flat-port paper and the rig story moved to the systems paper. They are still
+true, and §6 does lean on a per-dive laser calibration for the end-to-end
+measurement; what is not settled is whether that belongs here or is cited. That
+is a scope call, not a plotting one.

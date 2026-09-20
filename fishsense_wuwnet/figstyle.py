@@ -136,6 +136,38 @@ def apply() -> None:
     )
 
 
+#: Colour for the placeholder marking. Deliberately not one of `SERIES`, so a
+#: marked figure can never be confused with a data colour.
+PLACEHOLDER_INK = "#c2410c"
+
+
+def placeholder(fig, reason: str = "awaiting real data", axes=None) -> None:
+    """Mark a figure as standing in for one that is not yet measurable.
+
+    Some figures in this repo are simulation *results* and are finished; others
+    hold a slot for a measurement that has not been taken. Those two must not
+    look alike in a draft that is about to be read by someone else, so the mark
+    is deliberately hard to miss and hard to leave in by accident: a diagonal
+    word across every axes, and a coloured strip naming the reason.
+
+    `reason` should say what would replace it, not merely that it is provisional
+    -- "rendered views, not photographs" is useful, "TODO" is not.
+    """
+    for ax in (fig.axes if axes is None else axes):
+        ax.text(
+            0.5, 0.5, "PLACEHOLDER",
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=22, rotation=28, color=PLACEHOLDER_INK,
+            alpha=0.16, fontweight="bold", zorder=50, clip_on=False,
+        )
+    fig.text(
+        0.5, 0.985, f"PLACEHOLDER \u2014 {reason}",
+        ha="center", va="top", fontsize=8.5, color="white", fontweight="bold",
+        bbox=dict(boxstyle="round,pad=0.35", facecolor=PLACEHOLDER_INK, edgecolor="none"),
+        zorder=60,
+    )
+
+
 def _slug(text: str) -> str:
     keep = [c.lower() if c.isalnum() else "-" for c in text]
     out = "".join(keep)
