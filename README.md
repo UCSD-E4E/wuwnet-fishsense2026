@@ -56,6 +56,7 @@ runs without access to the image archive. `figures/` is generated, never edited.
 | `fishsense_wuwnet/refraction.py` | flat-port and dome-port geometry, Pinax, the exact axial model |
 | `fishsense_wuwnet/pipelines.py` | the back-projections, and the two length errors that differ by ~50× |
 | `fishsense_wuwnet/laser.py` | the dot locus, and three ways to close the beam |
+| `fishsense_wuwnet/water.py` | what the water's index actually is, by salinity, temperature and wavelength |
 | `fishsense_wuwnet/calibration_model.py` | the LEGO target's exact geometry, read from the Studio file |
 | `fishsense_wuwnet/target_render.py` | synthetic views of it, with ground truth |
 | `fishsense_wuwnet/target_detect.py` | finding it in an image, and which brick is which |
