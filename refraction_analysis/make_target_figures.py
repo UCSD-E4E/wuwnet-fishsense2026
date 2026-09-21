@@ -552,12 +552,12 @@ def pool_range_by_model():
                 markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         departure[name] = np.median(100 * (ranges[name] / reference - 1))
 
-    ax.set_xlabel("range from the board's calipered geometry (m)")
+    ax.set_xlabel("mean of the two corrected models (m)")
     ax.set_ylabel("range from each model (m)")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect("equal", adjustable="box")
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
-    ax.set_title("Two independent routes to range,\nand one that disagrees with both", fontsize=9)
+    ax.set_title("Range from the board's own pose:\ntwo routes agree, one does not", fontsize=9)
     spread = abs(departure["In-water SVP"]) + abs(departure["Pinax"])
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     return fig, "pool-range-by-camera-model"
@@ -724,7 +724,11 @@ def pool_decoy_length():
             err[n] = 100 * (sep * z / true_length - 1)
         measured[name], lengths[name] = rng, err
 
-    reference = np.array([measured["In-water SVP"][n] for n in kept])
+    # Same reasoning as the section 4.2 range figure: referencing one model puts
+    # it on the identity line by construction, so the mean of the two corrected
+    # ones is used and neither is privileged.
+    reference = np.array([0.5 * (measured["In-water SVP"][n] + measured["Pinax"][n])
+                          for n in kept])
     fig, (left, right) = plt.subplots(1, 2, figsize=(7.0, 4.0))
 
     lo, hi = 0.5, 1.10 * reference.max()
@@ -737,9 +741,9 @@ def pool_decoy_length():
                   label=name, zorder=3, markeredgewidth=1.4,
                   markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         departure[name] = np.median(100 * (ys / reference - 1))
-    left.set_xlabel("in-water calibration (m)")
-    left.set_ylabel("model under test (m)")
-    left.set_title("Range: a quarter out", fontsize=8.5)
+    left.set_xlabel("mean of the two corrected models (m)")
+    left.set_ylabel("range from each model (m)")
+    left.set_title("Range from the laser: a quarter out", fontsize=8.5)
     left.set_xlim(lo, hi); left.set_ylim(lo, hi)
     left.set_aspect("equal", adjustable="box")
     left.legend(fontsize=7.2, frameon=False, loc="upper left")
@@ -755,9 +759,9 @@ def pool_decoy_length():
                    zorder=3, markeredgewidth=1.4,
                    markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         summary.append(np.median(ys))
-    right.set_xlabel("range, in-water calibration (m)")
+    right.set_xlabel("mean of the two corrected models (m)")
     right.set_ylabel("length error (%)")
-    right.set_title("Length: the same for all three", fontsize=8.5)
+    right.set_title("Length from the same frames: identical", fontsize=8.5)
     right.set_ylim(-8.0, 4.0)
 
     fig.suptitle("The cancellation, on a fish-shaped decoy", y=0.99)
