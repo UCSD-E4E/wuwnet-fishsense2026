@@ -442,17 +442,35 @@ def test_the_calibration_target_geometry_is_exact_and_metric():
     points = model_points()
     assert points.shape == (8 * 135, 3)
 
-    # Five colours, none of them black. The original design used black and white
-    # with four marker colours at the wall ends, which made a detected marker
-    # name the face; that convention is gone, because a periodic two-colour bond
-    # left every local window ambiguous and a black brick has no visible edge
-    # against the dark seam. Colours are now spread so that no joint has the
-    # same colour on both sides -- see the calibration-model tests.
+    # The palette is the builder's, not the pipeline's. The original design used
+    # black and white with four marker colours at the wall ends, so a detected
+    # marker named the face; that convention is gone, because a periodic
+    # two-colour bond left every local window ambiguous. A five-colour layout
+    # excluding black replaced it, and the target that now exists was rebuilt
+    # from bricks on hand and uses eight including black and two grays.
+    #
+    # What the pipeline requires is only that it knows every colour it will be
+    # shown -- `target_render.LDRAW_BGR` has to draw it and `classify_colours`
+    # has to name it. The property that actually matters, that no joint has the
+    # same colour on both sides, is asserted on the model itself in
+    # `test_calibration_model`, and holds for the as-built target at 0 of 407.
     from fishsense_wuwnet.calibration_model import COLOURS
+    from fishsense_wuwnet.target_render import LDRAW_BGR
 
-    palette = {COLOURS[b.colour] for b in bricks}
-    assert palette == {"white", "red", "blue", "green", "yellow"}
-    assert min(Counter(b.colour for b in bricks).values()) >= 20
+    palette = {b.colour for b in bricks}
+    assert palette <= set(COLOURS), "a brick colour the model module cannot name"
+    assert palette <= set(LDRAW_BGR), "a brick colour the renderer cannot draw"
+
+    # The designed layout spread 135 bricks evenly over five colours, at least 20
+    # each. The as-built one is lopsided -- blue 37, black 33, yellow 20, white
+    # 21, red 12, light gray 6, dark gray 4, green 2 -- because it was built from
+    # what was on the shelf. Evenness was only ever a proxy for windows being
+    # distinguishable, and that is measured directly in
+    # `test_a_local_colour_window_nearly_always_locates_itself`, so what is
+    # asserted here is that no colour is so rare it cannot anchor anything.
+    counts = Counter(b.colour for b in bricks)
+    assert len(counts) >= 5, "too few colours to make local windows distinctive"
+    assert sum(n for n in counts.values() if n >= 10) >= 100
 
 
 def test_similarity_fit_separates_shape_error_from_scale():

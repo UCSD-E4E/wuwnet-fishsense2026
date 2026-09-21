@@ -96,18 +96,36 @@ def test_a_staggered_column_of_one_colour_is_not_one_quad():
     assert areas.max() < 6.0 * np.median(areas)
 
 
-def test_bricks_on_the_targets_vertical_edge_are_recovered_as_two_faces():
+def test_corner_views_recover_both_walls_often_enough_to_tie_their_poses():
     """A corner brick shows two faces and projects to a chevron, not a quad.
 
-    Worth keeping even though the target is no longer black and white: a chevron
-    that is not split is silently dropped, and the target's vertical edges are
-    where two walls are seen at once, which is what ties their poses together.
-    The check is that faces are recovered on more than one wall at a time.
+    A chevron that is not split is silently dropped, and the target's vertical
+    edges are where two walls are seen at once, which is what ties their poses
+    together. So the property worth holding is that corner views recover more
+    than one wall.
+
+    It is measured over a sweep rather than at one viewpoint, because whether a
+    single corner view finds two walls turns out to be marginal and
+    configuration-dependent: the eye this test used to hard-code finds one wall
+    at f = 1000 and two, with 47 faces, at f = 1260. Passing on one lucky
+    viewpoint was not evidence of anything.
+
+    Over sixteen corner views the designed five-colour layout recovers two walls
+    in eight; the target as built from bricks on hand manages six, with faces per
+    view falling from 42.8 to 27.9. Fewer, and still enough -- all twelve views
+    in the calibration sweep remain usable and pose to better than a degree.
     """
-    _, quads, correspondence = _detect((260.0, -330.0, 190.0))
-    walls = {tuple(np.round(f.normal, 6)) for f in correspondence.faces}
-    assert len(walls) >= 2, "only one wall matched; chevrons are being dropped"
-    assert len(quads) >= len(correspondence) // 4
+    two_walls, faces = 0, []
+    for azimuth in np.linspace(np.pi / 4, 2 * np.pi, 16, endpoint=False):
+        eye = (420.0 * np.cos(azimuth), 420.0 * np.sin(azimuth), 190.0)
+        _, quads, correspondence = _detect(eye)
+        walls = {tuple(np.round(f.normal, 6)) for f in correspondence.faces}
+        two_walls += len(walls) >= 2
+        faces.append(len(correspondence) // 4)
+        assert len(quads) >= len(correspondence) // 4
+
+    assert two_walls >= 4, "corner views have stopped tying the walls together"
+    assert np.mean(faces) > 20, "too few faces per view to pose from"
 
 
 def test_one_seed_colour_suffices_because_local_windows_are_unique():

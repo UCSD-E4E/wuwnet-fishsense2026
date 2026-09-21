@@ -63,7 +63,8 @@ MODEL_ENTRY = "model.ldr"
 #: face markers -- one hue per wall -- so a detected marker identifies which face
 #: is being seen, which is what makes correspondence tractable when only two or
 #: three walls are visible at once.
-COLOURS = {0: "black", 15: "white", 1: "blue", 4: "red", 2: "green", 14: "yellow"}
+COLOURS = {0: "black", 15: "white", 1: "blue", 4: "red", 2: "green", 14: "yellow",
+           7: "light gray", 8: "dark gray"}
 MARKER_COLOURS = (1, 4, 2, 14)
 
 #: Footprint of part 3001 (the 2x4 brick) in studs, and its body height.

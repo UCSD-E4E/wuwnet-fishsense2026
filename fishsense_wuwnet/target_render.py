@@ -40,6 +40,8 @@ LDRAW_BGR = {
     4: (9, 26, 201),  # red
     2: (65, 120, 35),  # green
     14: (55, 205, 242),  # yellow
+    7: (157, 161, 155),  # light gray
+    8: (92, 110, 109),  # dark gray
 }
 
 #: The dark line where two bricks meet, reproduced by insetting each face over a

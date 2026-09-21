@@ -56,17 +56,23 @@ def test_no_joint_has_the_same_colour_on_both_sides():
     with one side invisible the chamfer becomes a constant you have to know
     rather than one that cancels.
 
-    The as-built target had 92 such joints of 375, sixty of them black-on-black.
-    Black is the worst case twice over, since a black brick's own edge against
-    the dark seam is not visible either -- so the palette is five colours and
-    none of them is black.
+    An earlier build had 92 such joints of 375, sixty of them black-on-black,
+    which is why commit 7f65818 recoloured to five colours with black excluded.
+
+    The target that now exists was rebuilt from bricks actually on hand and black
+    is back -- 42 of its exposed side faces. The exclusion was always a proxy for
+    this property rather than the property itself, and measured on the as-built
+    model the property holds outright: **0 shared-colour joints of 407**. What
+    black does cost is detection margin, not correctness: on a sixteen-viewpoint
+    corner sweep it drops faces recovered per view from 42.8 to 27.9, because a
+    black face against a dark seam has less edge to find. The calibration that
+    comes out is unaffected -- see `test_target_detect` -- so the assertion here
+    is the joint property, and the palette is left to the builder.
     """
     up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
     for face in exposed_faces(sides_only=True):
         walls[tuple(np.round(face.normal, 6))].append(face)
-
-    assert 0 not in {f.colour for w in walls.values() for f in w}, "black is back"
 
     shared = 0
     for normal, wall in walls.items():
@@ -129,17 +135,26 @@ def test_the_bond_produces_tee_junctions_rather_than_saddle_points():
     assert all(p.is_tee for p in junctions), "a running bond admits no other kind"
 
 
-def test_a_local_colour_window_locates_itself_uniquely_on_the_target():
-    """What the recolouring bought: a partial view can say where it is.
+def test_a_local_colour_window_nearly_always_locates_itself():
+    """What the colour mix buys: a partial view can say where it is.
 
-    The as-built target was a periodic two-colour bond with markers only at the
-    wall ends, so *every* local window matched more than twenty places and
-    correspondence had to register a whole wall against a marker column. It also
-    meant a wrong anchor reprojected as well as the right one, which is how a
-    view could pose 147 degrees from the truth at barely a pixel of residual.
+    The first build was a periodic two-colour bond with markers only at the wall
+    ends, so *every* local window matched more than twenty places and
+    correspondence had to register a whole wall against a marker column. A wrong
+    anchor then reprojected as well as the right one, which is how a view could
+    pose 147 degrees from the truth at barely a pixel of residual.
 
-    Now every three-course by four-stud window on every wall is unique, so a
-    window identifies its own position outright.
+    The designed five-colour layout made every three-course by four-stud window
+    unique. The target as built from bricks on hand does not quite manage it:
+    **317 of 347 distinct windows are unique (91 %), and the worst matches five
+    places**. That is a real loss of margin against the design, and a large gain
+    against twenty-plus. It does not break correspondence, because a view carries
+    many windows and five-way ambiguity in one is resolved by its neighbours --
+    `test_target_detect` still recovers all twelve views and poses them to better
+    than a degree.
+
+    So this asserts the bound rather than the ideal, and would fail if a rebuild
+    drifted back toward periodicity.
     """
     up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
@@ -171,8 +186,10 @@ def test_a_local_colour_window_locates_itself_uniquely_on_the_target():
                 placements += 1
                 windows[window.tobytes()] += 1
 
+    counts = np.array(list(windows.values()))
     assert placements > 300
-    assert max(windows.values()) == 1
+    assert (counts == 1).sum() / len(counts) > 0.85, "windows are becoming periodic"
+    assert counts.max() <= 6, "a window now matches too many places to disambiguate"
 
 
 def test_fitting_the_model_to_a_transformed_copy_recovers_the_transform():
