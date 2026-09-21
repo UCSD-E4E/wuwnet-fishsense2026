@@ -593,6 +593,13 @@ def pool_range_by_model():
     Agreement between two independent routes is not proof that either is right.
     It is, though, the strongest statement this dataset supports, and it is why
     the claim is put as a disclosure in section 4.2 rather than as a result.
+
+    The scale is not assumed. Each range is solved from the board's *calipered*
+    geometry, so the metre comes from a physical object and the camera model
+    contributes only angles; and the magnification those angles carry was
+    measured rather than taken from theory -- section 4.1's in-water fit returns
+    a focal ratio of 1.3126 against the 1.333 refraction predicts, from
+    underwater frames alone. The uncorrected model assumes that ratio is 1.
     """
     pool = _pool()
     objp, models, boards, spots, frames = (pool["objp"], pool["models"], pool["boards"],
@@ -633,7 +640,7 @@ def pool_range_by_model():
                 markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         departure[name] = np.median(100 * (ranges[name] / reference - 1))
 
-    ax.set_xlabel("mean of the two corrected models (m)")
+    ax.set_xlabel("range from the board's calipered geometry (m)")
     ax.set_ylabel("range from each model (m)")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect("equal", adjustable="box")
@@ -641,11 +648,12 @@ def pool_range_by_model():
     ax.set_title("Two independent routes to range,\nand one that disagrees with both", fontsize=9)
     spread = abs(departure["In-water SVP"]) + abs(departure["Pinax"])
     fig.text(0.5, 0.005,
-             "Ten pool frames, each range from the board's own pose, against the mean of the two "
-             "corrected models.\nThe in-water calibration is fitted to underwater frames and holds "
-             "no refraction theory; Pinax comes from\nthe in-air calibration and never sees one. "
-             f"They share no data and differ by {spread:.1f} %. An uncorrected port sits\n"
-             f"{abs(departure['Uncorrected']):.0f} % below both \u2014 the 1/n_w the simulation predicts.",
+             "Ten pool frames. Every range is absolute, solved from the board's calipered geometry "
+             "\u2014 the object supplies\nthe metric scale, the camera model only the angles. The "
+             "reference is the mean of the two corrected models,\nwhich share no data and differ by "
+             f"{spread:.1f} %: one is fitted to underwater frames and holds no refraction theory, the "
+             f"other\ncomes from the in-air calibration and never sees one. An uncorrected port sits "
+             f"{abs(departure['Uncorrected']):.0f} % below both.",
              ha="center", va="bottom", fontsize=7.2, color="#52514e")
     fig.tight_layout(rect=(0, 0.20, 1, 0.94))
     return fig, "pool-range-by-camera-model"
