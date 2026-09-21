@@ -228,7 +228,8 @@ in a length measurement reveals this, because the same factor inflates the angul
 by exactly as much as it shrinks the range, and the two cancel.
 
 It does not affect any number in this paper. FishSense Lite delivers a length; range is an
-intermediate, and §6 shows the three camera models agreeing on length to within 1.8 %
+intermediate, and §6 shows the three camera models agreeing on length on both of its
+objects — to within 1.8 % on the board and to within 0.2 pp of each other on the decoy —
 precisely because of that cancellation. We state it because single-laser ranging is
 established practice in ROV survey work, so a reader may reasonably expect range to be an
 output of a rig like this one — and if it ever becomes one here, an uncorrected port is
@@ -417,20 +418,61 @@ as text or evidence.
 
 ## 6. Evaluation
 
-[TODO: rewrite around the camera-only end-to-end. It does **not** isolate the port —
-saying so was backwards, and the figure now contradicts it. What it shows is that at
-reachable geometry the port is nearly invisible in length: each camera model calibrates
-the laser with itself and then measures the board's 549.0 mm span, so each pipeline is
-internally consistent, and all three land. Ten frames, 1.08–4.48 m:
+The evaluation runs the whole pipeline — camera model, laser calibration, measurement —
+against two objects whose size was measured with calipers, and reports what comes out.
+Each camera model calibrates the laser **with itself**: whatever intrinsics fit the beam
+are the ones that then measure with it, because a deployment never mixes models. So each
+row below is an internally consistent pipeline rather than a component swapped into
+someone else's.
 
-    median   Uncorrected +0.3 %   In-water SVP -0.2 %   Pinax -0.3 %
-    worst    1.8 %                1.6 %                 1.6 %
+**A rigid plane, at survey range.** Ten pool frames carry both the checkerboard and a
+laser dot, over 1.09–4.47 m. For each camera model the beam is fitted by a line through
+the points where each frame's dot ray meets that frame's board plane, with anything
+beyond three times the median residual rejected and the line refitted; each frame's range
+is then re-derived from its dot alone, and the board's calipered 549.0 mm span measured
+at it.
 
-  The honest reading is that on *this* data the correction buys little, because the board
-  sits at 175–843 px where the differential term is small — which is the same fact §4.2
-  establishes, seen from the other side, not a contradiction of it. Say so. The claim the
-  data supports is that the correction removes a term that is small in the median and
-  reaches a third of the budget in the close-range tail, not that it rescues the system.]
+| camera model | median | worst |
+|---|---|---|
+| Uncorrected | +0.3 % | 1.8 % |
+| In-water SVP | −0.2 % | 1.6 % |
+| Pinax | −0.3 % | 1.6 % |
+
+The span is averaged over all ten rows of the board rather than taken from one corner
+pair. That is not cosmetic: a single pair spans a tilted board whose two ends sit at
+visibly different depths, and measuring it that way triples the worst case.
+
+**A fish-shaped body, at unconstrained pose.** The decoy is a rigid fish-shaped object of
+calipered length 312.5 mm, swinging on a line. Twelve of thirteen frames are used, over
+0.81–3.12 m; the thirteenth is rejected because its mask has an aspect ratio of 4.69
+against the decoy's calipered 2.95, a test that needs no range, no calibration and no
+known length. The medians are −2.6 %, −2.8 % and −2.7 % in the same order, and again the
+three models are indistinguishable.
+
+Two cautions about that row. The common −2.7 % is shared by all three and therefore says
+nothing about any of them: the beam is fitted on the board session and applied across to
+the decoy session, which precedes it by about ten minutes and one handling event, so real
+drift is in it. And while the p90 is near 4 %, one frame reaches 14.6 %, 15.9 % and 15.8 % for the
+three models — at or just past the deployment budget — on a mask that passes the
+aspect test. What is left after the
+optics are correct is the silhouette and the pose, which is where §8's limitations point.
+
+**The two experiments answer different questions, and only one can test scale.** The board
+calibrates the camera, poses the beam, and is then the object measured, so an error in its
+pitch propagates into the range and into the measured span and cancels against a ground
+truth that scaled with it. That row measures the pipeline's *angular* consistency and is
+blind to absolute scale. The decoy's 312.5 mm was calipered independently of the board, so
+it does respond to a board-scale error — it is the only absolute check here, and the drift
+above is why it bounds scale rather than measuring it.
+
+**What none of this decides.** All three models land, so a length measurement at this
+geometry cannot separate them. That is not a result about the correction being
+unnecessary; it is §4.2 seen from the other side. The dot has to land on the fish, which
+pins the fish near the optical axis, and there the port's range error and its magnification
+error move together and cancel out of a length. Where they do not cancel is range, and
+§4.2 gives the quarter that separates an uncorrected port from both corrected ones. The
+test that does discriminate on the imagery alone is §4.1's, which needs no range and so
+has nothing to cancel against.
 
 ## 7. Negative results
 

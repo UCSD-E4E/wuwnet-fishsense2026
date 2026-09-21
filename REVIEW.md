@@ -427,7 +427,7 @@ is free. The motivation moves from accuracy to operability, and the keystone is
 |---|---|---|
 | 1 | §5 "What calibrating in air enables" is an outline | the keystone, and currently the weakest-written part |
 | 2 | §4.2 rewrite | numbers computed, prose not written |
-| 3 | §6 rewrite around the camera-only end-to-end | must say plainly that the correction buys little *on this data*, and why that is consistent rather than contradictory |
+| 3 | ~~§6 rewrite around the camera-only end-to-end~~ | **done 2026-09-20.** Written, and it says so: all three camera models land on both objects, which is §4.2 seen from the other side rather than a contradiction. It also gained a second experiment -- the calipered decoy at unconstrained pose -- and the structural point that only that one can test absolute scale, since the board calibrates the camera, poses the beam and is then the thing measured. Two figures, both from committed code. |
 | 4 | §9 conclusion | follows 1–3 |
 | 5 | Related work | unchanged from Round 1: the longest pole, and §4.3 is the contested claim |
 | 6 | LEGO pilot | in progress; would turn §5 from enabled-but-untested into demonstrated, and would settle §8's `fx/fy` question if shot with 90° rolls |
