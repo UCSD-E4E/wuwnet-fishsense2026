@@ -53,6 +53,7 @@ def classify_colours(
     value_floor: int = 55,
     saturation_floor: int = 125,
     white_value: int = 110,
+    chroma_blur: float = 0.0,
 ) -> np.ndarray:
     """Label every pixel with an LDraw colour, or -1 for seam and background.
 
@@ -69,6 +70,22 @@ def classify_colours(
     # adjacent courses is the chamfer alone -- half a millimetre, a few pixels
     # at best and sub-pixel obliquely -- and any smoothing here closes it, which
     # merges a whole staggered column of same-coloured bricks into one blob.
+    if chroma_blur > 0:
+        # Denoise *chroma only*, never luminance. The two features this module
+        # reads have different bandwidths: a colour label is a low-frequency
+        # property of a brick face, while the seam that separates two faces is a
+        # luminance edge half a millimetre wide. Blurring the image as a whole
+        # closes the seam and merges a staggered column into one blob; leaving
+        # raw chroma alone shatters it -- at ISO 1600 a linear raw gives 1770
+        # blue blobs where the camera's own denoised JPEG gives 35, and the
+        # survivors come out as ragged 8- to 12-gons that no longer read as
+        # quads. Splitting the two is what lets the detector run on raw, which
+        # it must: the camera's JPEG pipeline applies a lens correction, so JPEG
+        # geometry is not the sensor's geometry.
+        ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+        ycrcb[..., 1] = cv2.GaussianBlur(ycrcb[..., 1], (0, 0), chroma_blur)
+        ycrcb[..., 2] = cv2.GaussianBlur(ycrcb[..., 2], (0, 0), chroma_blur)
+        image = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue, saturation, value = hsv[..., 0].astype(float), hsv[..., 1], hsv[..., 2]
     labels = np.full(image.shape[:2], -1, np.int16)
@@ -92,11 +109,22 @@ def detect_quads(
     min_area_px: float = 150.0,
     approx_tolerance: float = 0.03,
     fill_floor: float = 0.85,
+    open_px: int = 3,
+    chroma_blur: float = 0.0,
 ) -> List[Quad]:
     """Find brick faces as four-sided blobs of one colour.
 
     Two properties of the target dictate how this is done, and both were found
     by running it rather than by reasoning about it.
+
+    **On photographs, pass `chroma_blur=2.0, open_px=5`.** The defaults are sized
+    for rendered views, where edges are clean and any smoothing costs accuracy --
+    a chroma blur of 2 px moves one synthetic view's pose from 0.3 to 2.5
+    degrees. A linear raw at ISO 1600 is the opposite problem: measured on this
+    camera it yields 1770 blue blobs where the camera's own denoised JPEG yields
+    35, and the survivors are ragged 8- to 12-gons that no longer read as quads.
+    With the photographic settings the same frame goes from 20 detected faces to
+    69, against 75 for the JPEG.
 
     Blobs are labelled **4-connected**. In a running bond a brick and the brick
     a course above it meet at a single corner, so same-colour faces touch
@@ -113,13 +141,17 @@ def detect_quads(
 
     What a face is *not* tested for is rectangularity -- see `_fill`.
     """
-    labels = classify_colours(image)
+    labels = classify_colours(image, chroma_blur=chroma_blur)
     quads: List[Quad] = []
     for colour in np.unique(labels):
         if colour < 0:
             continue
         mask = (labels == colour).astype(np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        # Sized for the sensor, not for a render: an opening that just removes
+        # antialiasing on synthetic edges leaves photographic speckle intact.
+        kernel = np.ones((open_px, open_px), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         count, blobs = cv2.connectedComponents(mask, connectivity=4)
         for index in range(1, count):
             blob = (blobs == index).astype(np.uint8)

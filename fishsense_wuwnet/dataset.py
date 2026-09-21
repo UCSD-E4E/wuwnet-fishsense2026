@@ -379,6 +379,33 @@ def raw_gray(raw, low_percentile=1.0, high_percentile=90.0, gamma=2.2) -> np.nda
     return ((scaled ** (1.0 / gamma)) * 255.0).astype(np.uint8)
 
 
+def raw_colour(raw, high_percentile=99.5, gamma=2.2) -> np.ndarray:
+    """Tone-map a linear raw to 8-bit BGR for the colour-based target detector.
+
+    The companion to `raw_gray`, which throws colour away because corner
+    detection does not need it; the brick target is found *by* colour and does.
+
+    Why this exists at all rather than reading the JPEG: the TG-6 applies an
+    in-camera lens correction to its JPEGs, so JPEG geometry is not the sensor's
+    geometry (see the note above). Calibrating on JPEGs measures the camera
+    convolved with an undisclosed warp, and the resulting intrinsics do not
+    describe the sensor the refraction model is applied to.
+
+    `LinearRawImage` has already applied the camera's white balance -- grey-world
+    gains on this set come out within 2 % of unity -- so all that is left is a
+    highlight-preserving stretch and the sRGB-ish gamma the hue thresholds in
+    `target_detect` were set against. The percentile is high rather than 90 as in
+    `raw_gray` because clipping a saturated brick would move its hue, which is
+    the one thing the detector reads.
+    """
+    data = raw.data.astype(np.float32)
+    high = np.percentile(data, high_percentile)
+    if high <= 0:
+        high = float(data.max()) or 1.0
+    scaled = np.clip(data / high, 0.0, 1.0) ** (1.0 / gamma)
+    return (scaled * 255.0).astype(np.uint8)
+
+
 def detect_laser_dot_raw(raw, seed=None, half=40, threshold=0.5):
     """Sub-pixel laser centroid from the Bayer green-excess channel.
 
