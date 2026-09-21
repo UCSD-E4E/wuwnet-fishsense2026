@@ -40,6 +40,10 @@ LDRAW_BGR = {
     4: (9, 26, 201),  # red
     2: (65, 120, 35),  # green
     14: (55, 205, 242),  # yellow
+    # LDraw's legacy greys, which Studio still writes. They are here because the
+    # target as built uses them, not because the design called for them.
+    7: (157, 161, 155),  # light gray
+    8: (92, 110, 109),  # dark gray
 }
 
 #: The dark line where two bricks meet, reproduced by insetting each face over a

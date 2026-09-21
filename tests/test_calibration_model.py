@@ -47,26 +47,23 @@ def test_extent_is_a_whole_number_of_studs_and_bricks():
 
 
 def test_no_joint_has_the_same_colour_on_both_sides():
-    """The property the target was recoloured for, and it buys two things.
+    """The one layout property that has to survive whatever bricks were on hand.
 
-    A joint whose two faces share a colour is not a joint in the image: the
-    blobs merge, and a merged pair looks like one brick of the wrong size. It
-    also costs accuracy even when it does not merge, because a joint centre can
-    only be read as the midpoint of two observed edges if both edges are there;
-    with one side invisible the chamfer becomes a constant you have to know
-    rather than one that cancels.
+    A joint whose two faces share a colour is not a joint in the image: the blobs
+    merge, and a merged pair looks like one brick of the wrong size, which puts
+    object points on a lie rather than merely losing a feature.
 
-    The as-built target had 92 such joints of 375, sixty of them black-on-black.
-    Black is the worst case twice over, since a black brick's own edge against
-    the dark seam is not visible either -- so the palette is five colours and
-    none of them is black.
+    The target as built uses eight colours rather than the designed five, and 33
+    of its bricks are black -- but it still has zero same-colour joints, and that
+    is why it calibrates as well as the design did. Black costs *features*: a
+    black face against the 0.25 mm chamfer has no visible edge, so none of its
+    126 appearances across eight rendered views is detected. It costs accuracy
+    only if the estimator is left short of features, and it is not.
     """
     up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
     for face in exposed_faces(sides_only=True):
         walls[tuple(np.round(face.normal, 6))].append(face)
-
-    assert 0 not in {f.colour for w in walls.values() for f in w}, "black is back"
 
     shared = 0
     for normal, wall in walls.items():
@@ -129,17 +126,25 @@ def test_the_bond_produces_tee_junctions_rather_than_saddle_points():
     assert all(p.is_tee for p in junctions), "a running bond admits no other kind"
 
 
-def test_a_local_colour_window_locates_itself_uniquely_on_the_target():
-    """What the recolouring bought: a partial view can say where it is.
+def test_a_local_colour_window_is_mostly_but_no_longer_wholly_unique():
+    """Local uniqueness degraded with the as-built palette, and it did not matter.
 
-    The as-built target was a periodic two-colour bond with markers only at the
-    wall ends, so *every* local window matched more than twenty places and
-    correspondence had to register a whole wall against a marker column. It also
-    meant a wrong anchor reprojected as well as the right one, which is how a
-    view could pose 147 degrees from the truth at barely a pixel of residual.
+    The designed five-colour layout made every three-course by four-stud window
+    unique. Built from bricks on hand -- green down to two, three near-neutral
+    tones -- 19 % of windows now match somewhere else, at worst five places.
 
-    Now every three-course by four-stud window on every wall is unique, so a
-    window identifies its own position outright.
+    Kept as a *measurement* rather than an assertion of uniqueness, because the
+    obvious inference from that degradation is wrong. Correspondence does not
+    look up windows; it fits a homography per wall and grows it on its own
+    inliers, so it needs the wall to be locally distinguishable on average, not
+    everywhere. Measured against the designed layout on the same eight views,
+    the as-built target gives fewer detected faces (44 against 64) and the same
+    calibration: fx -0.013 % against -0.249 %, fx/fy +0.040 % against +0.076 %.
+
+    This number is worth watching. If it climbs much further the homography will
+    start seeding on the wrong brick, and the failure mode is not subtle -- on a
+    periodic layout a wrong anchor reprojects under a pixel while posing 147
+    degrees from the truth.
     """
     up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
@@ -171,8 +176,10 @@ def test_a_local_colour_window_locates_itself_uniquely_on_the_target():
                 placements += 1
                 windows[window.tobytes()] += 1
 
+    ambiguous = sum(count for count in windows.values() if count > 1)
     assert placements > 300
-    assert max(windows.values()) == 1
+    assert ambiguous / placements < 0.35, "the layout is becoming periodic"
+    assert max(windows.values()) <= 8
 
 
 def test_fitting_the_model_to_a_transformed_copy_recovers_the_transform():

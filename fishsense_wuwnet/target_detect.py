@@ -461,31 +461,39 @@ def _score(homography, wall, local, detected, centre_tolerance):
     return pairs
 
 
-def _seed_faces(wall: Sequence[Face], detected: Sequence[Quad], colours: int = 1):
-    """`(index, face)` pairs to seed hypotheses from: the cheapest few colours.
+def _seed_faces(
+    wall: Sequence[Face], detected: Sequence[Quad], colours: int = 1, min_seeds: int = 6
+):
+    """`(index, face)` pairs to seed hypotheses from: the cheapest colours, but enough of them.
 
     Each seed costs eight homographies per detected quad of its colour, so a
     colour's cost is (faces of that colour on the wall) x (quads of it in the
-    image). Taking the cheapest few rather than naming marker colours in advance
-    keeps this working when the target is recoloured -- on the as-built target
-    the cheapest four *are* the markers.
+    image). Taking the cheapest keeps the search small without naming marker
+    colours in advance, which is what lets this survive a recolouring.
 
-    One colour is the default and it is enough *for a target whose local colour
-    windows are unique*, which the current one's are. Measured across six views
-    on it, widening to two, three or four colours changes nothing at all -- the
-    same 54.3 faces and the same 0.139 degree pose -- while costing 4.7 times
-    the runtime, because a wrong anchor no longer scores well enough to win.
+    `min_seeds` is the part that cost a wall before it was added. Cheapest alone
+    is a trap when a colour is *rare*: on the target as built, one wall holds a
+    single green brick, so green is easily the cheapest colour and also nearly
+    useless -- the two green quads in the frame need not belong to this wall at
+    all. That wall then produced no hypothesis clearing `min_faces` and dropped
+    out entirely, while carrying twenty-eight perfectly detectable faces. So
+    colours are accumulated in cost order until there are enough candidate faces
+    to expect a correct anchor among them.
 
-    On the earlier black-and-white target it was not enough, and the failure was
-    not subtle: the bond was periodic, so a wrong anchor reprojected under a
-    pixel while posing 147 degrees from the truth. If the target is ever
-    recoloured into something periodic again, raise this.
+    On a target whose colours are evenly spread this changes nothing, because
+    the cheapest colour already clears the floor on its own -- which is why
+    seeding from one colour measured identically to four on the designed layout.
     """
     available = {q.colour for q in detected}
     on_wall = Counter(f.colour for f in wall if f.colour in available)
     if not on_wall:
         return []
     in_view = Counter(q.colour for q in detected)
-    cheapest = sorted(on_wall, key=lambda c: on_wall[c] * in_view[c])[:colours]
-    chosen = set(cheapest)
+    chosen: set = set()
+    seeds = 0
+    for colour in sorted(on_wall, key=lambda c: on_wall[c] * in_view[c]):
+        chosen.add(colour)
+        seeds += on_wall[colour]
+        if seeds >= min_seeds and len(chosen) >= colours:
+            break
     return [(i, f) for i, f in enumerate(wall) if f.colour in chosen]
