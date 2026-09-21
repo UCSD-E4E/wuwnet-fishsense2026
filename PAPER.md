@@ -588,14 +588,16 @@ from that are not available underwater at all.]
 
 All are written by `uv run python refraction_analysis/make_figures.py` and
 `refraction_analysis/make_target_figures.py`, as PDF and PNG with the same stem.
+This paper's land in `figures/`; figures belonging to a sibling paper are written
+straight into that paper's handover folder, so ownership is where the generator
+puts the file rather than a note someone has to remember.
+
 Captions live in this table and not inside the images, so that setting the paper
 does not mean re-rendering a figure to reword a sentence; each becomes a
 `\caption{}` as it stands.
-This paper's land in `figures/`; figures belonging to a sibling paper are written
-straight into that paper's handover folder, so ownership is where the generator
-puts the file rather than a note someone has to remember. **Placeholder** means the figure stands in for a measurement not
-yet taken; each carries a visible banner saying so, and must not go to camera-ready
-in that state.
+
+**Placeholder** means the figure stands in for a measurement not yet taken. Each
+carries a visible banner saying so, and must not go to camera-ready in that state.
 
 | section | file stem | status | caption |
 |---|---|---|---|
