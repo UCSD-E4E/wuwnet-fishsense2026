@@ -667,7 +667,8 @@ def pool_decoy_length():
     claiming the uncorrected model is bad has to come from section 4.1, whose
     test needs no range and therefore has nothing to cancel against.
 
-    What does limit it is the silhouette. One frame's mask has an aspect ratio
+    Range is not shown here; section 4.2 carries it. What does limit a length is
+    the silhouette. One frame's mask has an aspect ratio
     of 4.7 against the decoy's calipered 2.95, and carries a +28 % error on its
     own; the rule that rejects it uses no range, no calibration and no known
     length, only the mask's own proportions, which is the same scale-free
@@ -696,20 +697,22 @@ def pool_decoy_length():
     kept = [n for n in frames if abs(aspect(n) / true_aspect - 1) <= 0.25]
     dropped = [n for n in frames if n not in kept]
 
-    # The decoy frames carry no board, so there is no pose to take a range from
-    # and no reference that is independent of a camera model. What can be done
-    # is what section 4.2's board figure does: hold one model up as the yardstick
-    # and show where the others sit. The in-water calibration is used for that,
-    # because it is fitted to underwater frames and owes nothing to refraction
-    # theory.
+    # One panel, and deliberately only the length half.
     #
-    # An earlier version plotted each model's laser range against the range its
-    # OWN apparent-size reading implies. That cannot show anything: both axes
-    # run through the same model, the 1/n_w factor divides out, and every model
-    # lands on the identity line by construction -- which reads as though
-    # nothing is wrong. The two panels below separate the halves instead, which
-    # is the whole claim on the decoy: the range is a quarter out and the
-    # length is not.
+    # An earlier version put range beside it, showing the uncorrected model a
+    # quarter short. That panel was not independent evidence and should not have
+    # been read as any: the beam each model uses is fitted from the board frames
+    # that section 4.2's range figure already plots, and both routes back-project
+    # through the same intrinsics, so the same n_w error simply appeared twice.
+    # Section 4.2 carries range; this carries what only the decoy can show, which
+    # is a fish-shaped body at unconstrained pose.
+    #
+    # Worth recording from that deleted panel, because it is not obvious: the
+    # beam fit does not absorb the magnification error, it passes it through. The
+    # uncorrected model recovers the laser's transverse offset as 101.2 mm
+    # against Pinax's 103.0 and a bench 104 -- essentially right -- while its
+    # ranges come out a quarter short. |O| is transverse and survives the
+    # magnification; range goes as |O|/tan(alpha) and takes all of it.
     measured, lengths = {}, {}
     for name, correct in models.items():
         origin, axis = pool["beams"][name]
@@ -724,48 +727,29 @@ def pool_decoy_length():
             err[n] = 100 * (sep * z / true_length - 1)
         measured[name], lengths[name] = rng, err
 
-    # Same reasoning as the section 4.2 range figure: referencing one model puts
-    # it on the identity line by construction, so the mean of the two corrected
-    # ones is used and neither is privileged.
+    # Every model plotted at one x, so a frame reads as a vertical triplet.
     reference = np.array([0.5 * (measured["In-water SVP"][n] + measured["Pinax"][n])
                           for n in kept])
-    fig, (left, right) = plt.subplots(1, 2, figsize=(7.0, 4.0))
 
-    lo, hi = 0.5, 1.10 * reference.max()
-    left.plot([lo, hi], [lo, hi], color="#4a4a47", lw=1.0, zorder=1)
-    departure = {}
-    for name in models:
-        style = figstyle.pipeline(name, line=False)
-        ys = np.array([measured[name][n] for n in kept])
-        left.plot(reference, ys, marker=MARKERS[name], markersize=5, linestyle="none",
-                  label=name, zorder=3, markeredgewidth=1.4,
-                  markerfacecolor="none" if name == "Pinax" else style["color"], **style)
-        departure[name] = np.median(100 * (ys / reference - 1))
-    left.set_xlabel("mean of the two corrected models (m)")
-    left.set_ylabel("range from each model (m)")
-    left.set_title("Range from the laser: a quarter out", fontsize=8.5)
-    left.set_xlim(lo, hi); left.set_ylim(lo, hi)
-    left.set_aspect("equal", adjustable="box")
-    left.legend(fontsize=7.2, frameon=False, loc="upper left")
-
+    fig, ax = plt.subplots(figsize=(6.2, 3.4))
+    ax.axhline(0.0, color="#4a4a47", lw=1.0, zorder=1)
+    ax.annotate("calipered 312.5 mm", xy=(0.99, 0.0), xycoords=("axes fraction", "data"),
+                ha="right", va="bottom", fontsize=7.2, color="#4a4a47")
     summary = []
-    right.axhline(0.0, color="#4a4a47", lw=1.0, zorder=1)
-    right.annotate("calipered 312.5 mm", xy=(0.98, 0.0), xycoords=("axes fraction", "data"),
-                   ha="right", va="bottom", fontsize=7.0, color="#4a4a47")
     for name in models:
         style = figstyle.pipeline(name, line=False)
         ys = np.array([lengths[name][n] for n in kept])
-        right.plot(reference, ys, marker=MARKERS[name], markersize=5, linestyle="none",
-                   zorder=3, markeredgewidth=1.4,
-                   markerfacecolor="none" if name == "Pinax" else style["color"], **style)
+        ax.plot(reference, ys, marker=MARKERS[name], markersize=5, linestyle="none",
+                label=name, zorder=3, markeredgewidth=1.4,
+                markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         summary.append(np.median(ys))
-    right.set_xlabel("mean of the two corrected models (m)")
-    right.set_ylabel("length error (%)")
-    right.set_title("Length from the same frames: identical", fontsize=8.5)
-    right.set_ylim(-8.0, 4.0)
-
-    fig.suptitle("The cancellation, on a fish-shaped decoy", y=0.99)
-    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    ax.set_xlabel("range to the decoy (m)")
+    ax.set_ylabel("length error (%)")
+    ax.set_ylim(-8.0, 4.0)
+    ax.legend(fontsize=7.4, frameon=False, loc="lower right", ncol=3,
+              handletextpad=0.3, columnspacing=1.2)
+    ax.set_title("The same length from all three camera models")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     return fig, "pool-decoy-length-by-camera-model"
 
 
