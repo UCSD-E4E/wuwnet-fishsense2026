@@ -546,35 +546,38 @@ from that are not available underwater at all.]
 
 All are written by `uv run python refraction_analysis/make_figures.py` and
 `refraction_analysis/make_target_figures.py`, as PDF and PNG with the same stem.
+Captions live in this table and not inside the images, so that setting the paper
+does not mean re-rendering a figure to reword a sentence; each becomes a
+`\caption{}` as it stands.
 This paper's land in `figures/`; figures belonging to a sibling paper are written
 straight into that paper's handover folder, so ownership is where the generator
 puts the file rather than a note someone has to remember. **Placeholder** means the figure stands in for a measurement not
 yet taken; each carries a visible banner saying so, and must not go to camera-ready
 in that state.
 
-| section | file stem | status |
-|---|---|---|
-| §3 | `sim-flat-port-angular-compression-2-m-salt-water` | final |
-| §3 | `sim-uncorrected-radial-error-at-the-image-plane-2-m-salt-water` | final |
-| §4.1 | `pool-homography-residual-vs-radial-position-underwater-frames` | final |
-| §4.2 | `pool-differential-magnification-at-fish-vs-at-laser-dot-line-fish-along-the` | final |
-| §4.2 | `sim-flat-port-error-vs-field-angle-by-focal-length` | final |
-| §4.2 | `sim-length-error-vs-field-position-0-3-m-fish-at-2-0-m` | final |
-| §4.2 | `sim-uncorrected-range-error-vs-length-error` | final |
-| §4.2 | `pool-range-by-camera-model` | final |
-| §4.3 | `sim-in-water-svp-length-error-vs-range-by-housing-geometry` | final |
-| §4.3 | `sim-length-error-from-calibration-noise-300-trials` | final |
-| §4.3 | `sim-range-error-vs-distance-noise-free` | final |
-| §4.3 | `sim-range-error-vs-labeler-noise-by-direction` | final |
-| §4.5 | `sim-what-an-in-air-calibration-costs-by-port-type` | final |
-| §5 | `sim-calibration-error-budget-by-laser-regime` | final |
-| §5 | `sim-target-sensitivity-to-build-quality` | final |
-| §5 | `target-detection-on-one-view` | **placeholder** |
-| §5 | `target-focal-ratio-vs-view-count` | **placeholder** |
-| §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** |
-| §6 | `pool-end-to-end-board-span-by-camera-model` | final |
-| §6 | `pool-decoy-length-by-camera-model` | final |
-| §8 | `sim-length-error-from-a-water-index-mismatch` | final |
+| section | file stem | status | caption |
+|---|---|---|---|
+| §3 | `sim-flat-port-angular-compression-2-m-salt-water` | final | *(caption not yet written)* |
+| §3 | `sim-uncorrected-radial-error-at-the-image-plane-2-m-salt-water` | final | *(caption not yet written)* |
+| §4.1 | `pool-homography-residual-vs-radial-position-underwater-frames` | final | *(caption not yet written)* |
+| §4.2 | `pool-differential-magnification-at-fish-vs-at-laser-dot-line-fish-along-the` | final | *(caption not yet written)* |
+| §4.2 | `sim-flat-port-error-vs-field-angle-by-focal-length` | final | Three lenses spanning a threefold change in focal length, same pane. The curves are identical to better than 0.01 %, so the correction transfers to any flat-pane housing — action cameras and phones included. |
+| §4.2 | `sim-length-error-vs-field-position-0-3-m-fish-at-2-0-m` | final | *(caption not yet written)* |
+| §4.2 | `sim-uncorrected-range-error-vs-length-error` | final | A 300 mm fish with the dot on it, laser offset 104 mm. The uncorrected range error is flat because it is 1/n_w; the length error is what survives the cancellation, and it grows toward close range where the fish subtends a larger angle. Simulation, so the truth is known rather than derived through a camera model. |
+| §4.2 | `pool-range-by-camera-model` | final | Ten pool frames. Every range is absolute, solved from the board's calipered geometry — the object supplies the metric scale, the camera model only the angles. The reference is the mean of the two corrected models, which share no data and differ by 0.6 %: one is fitted to underwater frames and holds no refraction theory, the other comes from the in-air calibration and never sees one. An uncorrected port sits 26 % below both. |
+| §4.3 | `sim-in-water-svp-length-error-vs-range-by-housing-geometry` | final | *(caption not yet written)* |
+| §4.3 | `sim-length-error-from-calibration-noise-300-trials` | final | *(caption not yet written)* |
+| §4.3 | `sim-range-error-vs-distance-noise-free` | final | *(caption not yet written)* |
+| §4.3 | `sim-range-error-vs-labeler-noise-by-direction` | final | *(caption not yet written)* |
+| §4.5 | `sim-what-an-in-air-calibration-costs-by-port-type` | final | *(caption not yet written)* |
+| §5 | `sim-calibration-error-budget-by-laser-regime` | final | Trusting the bench, range and extent scale together and the focal error cancels; the dot sits ~80 px off axis at 4 m, so the principal point is ruinous. Re-fitting the beam absorbs the principal point and, by pinning the range, destroys that cancellation. Dotted line is the 15 % worst-case budget. |
+| §5 | `sim-target-sensitivity-to-build-quality` | final | Misspecifying the chamfer by ±0.15 mm moves fx by less than the estimator's own scatter. Assembly slop does bind — about 1 % of length at 0.2 mm — and it leaves the fx/fy ratio, the quantity the tower is for, alone. |
+| §5 | `target-detection-on-one-view` | **placeholder** | *(caption not yet written)* |
+| §5 | `target-focal-ratio-vs-view-count` | **placeholder** | Both stay inside ±0.1 % from four views on. The anisotropy being recovered is 1.09 % — about thirty times the residual error — and no view here is rolled, which is the case a planar board cannot settle. |
+| §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** | Thirteen frames of the 312.5 mm decoy, both calibrations taken in air and both corrected identically, so the target is the only difference. Section 4 settles the correction; this settles the reference. |
+| §6 | `pool-end-to-end-board-span-by-camera-model` | final | Ten pool frames; each model calibrates the laser with itself, so every pipeline is internally consistent. Median +0.3 / -0.2 / -0.3 %, worst 1.8 / 1.6 / 1.6 %, in legend order. All three land on the calipered span, including the uncorrected one: its range and magnification errors are both about a quarter, and they cancel. Length cannot separate these models — §4.1's ground-truth-free test is what does. |
+| §6 | `pool-decoy-length-by-camera-model` | final | 12 of 13 decoy frames; 1 rejected for a mask whose aspect ratio misses the calipered 2.95 by more than a quarter. The uncorrected model ranges 25 % short of the in-water calibration and Pinax sits within 0.6 %, yet all three read the same length (median -2.6 / -2.8 / -2.7 %, in legend order). Length cannot see the error that range shows plainly. |
+| §8 | `sim-length-error-from-a-water-index-mismatch` | final | *(caption not yet written)* |
 
 Three of 21 are placeholders. Two await photographs of the built calibration target:
 the detector currently runs on rendered views only. The third is §5's, which compares

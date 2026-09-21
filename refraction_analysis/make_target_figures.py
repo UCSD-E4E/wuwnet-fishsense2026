@@ -123,14 +123,7 @@ def error_budget():
         # the steep curve in the other.
         ax.set_ylim(-0.6, 20.0)
     fig.suptitle("Which intrinsic binds depends on how the laser is calibrated")
-    fig.text(
-        0.5, 0.005,
-        "Trusting the bench, range and extent scale together and the focal error cancels; the dot sits "
-        "~80 px off axis\nat 4 m, so the principal point is ruinous. Re-fitting the beam absorbs the "
-        "principal point and, by pinning the\nrange, destroys that cancellation. Dotted line is the "
-        "15 % worst-case budget.",
-        ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.16, 1, 1))
+    fig.tight_layout(rect=(0, 0, 1, 1))
     return fig, "sim-calibration-error-budget-by-laser-regime"
 
 
@@ -171,12 +164,7 @@ def field_angle_collapse():
     ax.set_ylabel("uncorrected length error (%)")
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
     ax.set_title("A flat port's error follows the field angle, not the lens")
-    fig.text(0.5, 0.005,
-             "Three lenses spanning a threefold change in focal length, same pane. The curves are "
-             "identical to better than\n0.01 %, so the correction transfers to any flat-pane housing "
-             "— action cameras and phones included.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.13, 1, 1))
+    fig.tight_layout(rect=(0, 0, 1, 1))
     return fig, "sim-flat-port-error-vs-field-angle-by-focal-length"
 
 
@@ -216,12 +204,7 @@ def build_quality():
         ax.axhline(0.0, color="#8a8a85", lw=0.8)
 
     fig.suptitle("What limits “exact by construction” is assembly, not specification")
-    fig.text(0.5, 0.005,
-             "Misspecifying the chamfer by ±0.15 mm moves fx by less than the estimator's own scatter. "
-             "Assembly slop does\nbind — about 1 % of length at 0.2 mm — and it leaves the "
-             "fx/fy ratio, the quantity the tower is for, alone.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.14, 1, 1))
+    fig.tight_layout(rect=(0, 0, 1, 1))
     return fig, "sim-target-sensitivity-to-build-quality"
 
 
@@ -311,13 +294,8 @@ def focal_ratio_vs_views():
     # tenth of a percent fills the panel and looks like a trend.
     ax.set_ylim(-0.15, 0.15)
     ax.set_title(f"Recovering a {100 * (truth - 1):.2f} % anisotropy from unrolled views")
-    fig.text(0.5, 0.005,
-             f"Both stay inside \u00b10.1 % from four views on. The anisotropy being recovered is "
-             f"{100 * (truth - 1):.2f} % \u2014 about thirty times\nthe residual error \u2014 and no "
-             f"view here is rolled, which is the case a planar board cannot settle.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
     figstyle.placeholder(fig, "rendered views — replace with photographs of the built target")
-    fig.tight_layout(rect=(0, 0.19, 1, 0.92))
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
     return fig, "target-focal-ratio-vs-view-count"
 
 
@@ -362,15 +340,10 @@ def target_lego_vs_checkerboard():
     ax.set_ylim(-6.0, 6.0)
     ax.legend(fontsize=7.4, frameon=False, loc="upper right")
     ax.set_title("Does the in-air target change the answer?")
-    fig.text(0.5, 0.005,
-             "Thirteen frames of the 312.5 mm decoy, both calibrations taken in air and both "
-             "corrected identically, so the\ntarget is the only difference. Section 4 settles the "
-             "correction; this settles the reference.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
     figstyle.placeholder(
         fig, "illustrative values \u2014 replace with the pool fish measured against "
              "each in-air target")
-    fig.tight_layout(rect=(0, 0.17, 1, 0.92))
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
     return fig, "target-pool-length-lego-vs-checkerboard"
 
 
@@ -438,13 +411,7 @@ def range_versus_length():
     ax.set_ylim(-30.0, 8.0)
     ax.legend(fontsize=7.4, frameon=False, loc="center right")
     ax.set_title("The port's error goes into range, and cancels out of length")
-    fig.text(0.5, 0.005,
-             "A 300 mm fish with the dot on it, laser offset 104 mm. The uncorrected range error is "
-             "flat because it is\n1/n_w; the length error is what survives the cancellation, and it "
-             "grows toward close range where the fish\nsubtends a larger angle. Simulation, so the "
-             "truth is known rather than derived through a camera model.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.19, 1, 0.93))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     return fig, "sim-uncorrected-range-error-vs-length-error"
 
 
@@ -520,61 +487,6 @@ def _pool():
 MARKERS = {"Uncorrected": "o", "In-water SVP": "s", "Pinax": "^"}
 
 
-def _end_to_end_panels(measured, title, xlabel, true_label, caption, ylim):
-    """Two panels sharing one x axis: length error above, range error below.
-
-    Every model is drawn at the *same* x -- the reference model's range -- so a
-    frame is a vertical triplet and the three can be read against each other by
-    eye. An earlier version gave each model its own x, which is truthful but
-    unreadable: the two corrected models land within 0.6 % of each other, so
-    their markers overlapped into a blur, and the range disagreement it was
-    meant to expose had to be inferred from horizontal displacement.
-
-    Putting range in its own panel says the same thing outright, and separates
-    the two claims: the models disagree about range by tens of percent and about
-    length by almost nothing.
-    """
-    reference = "Pinax"
-    frames = sorted(measured[reference], key=lambda n: measured[reference][n][0])
-    x = np.array([measured[reference][n][0] for n in frames])
-
-    fig, (top, bottom) = plt.subplots(
-        2, 1, figsize=(6.2, 5.0), sharex=True,
-        gridspec_kw=dict(height_ratios=(2.1, 1.0), hspace=0.12))
-
-    top.axhline(0.0, color="#4a4a47", lw=1.0, zorder=1)
-    top.annotate(true_label, xy=(0.99, 0.0), xycoords=("axes fraction", "data"),
-                 ha="right", va="bottom", fontsize=7.2, color="#4a4a47")
-    bottom.axhline(0.0, color="#8a8a85", lw=0.8, zorder=1)
-
-    for name in measured:
-        style = figstyle.pipeline(name, line=False)
-        top.plot(x, [measured[name][n][1] for n in frames], marker=MARKERS[name],
-                 markersize=5, linestyle="none", label=name, zorder=3,
-                 markerfacecolor="none" if name == "Pinax" else style["color"],
-                 markeredgewidth=1.4, **style)
-        rel = [100 * (measured[name][n][0] / measured[reference][n][0] - 1) for n in frames]
-        bottom.plot(x, rel, marker=MARKERS[name], markersize=5, linestyle="none",
-                    zorder=3, markerfacecolor="none" if name == "Pinax" else style["color"],
-                    markeredgewidth=1.4, **style)
-
-    top.set_ylabel("length error (%)")
-    top.set_ylim(*ylim)
-    top.legend(fontsize=7.4, frameon=False, loc="lower right", ncol=3,
-               handletextpad=0.3, columnspacing=1.2)
-    top.set_title(title)
-    bottom.set_ylabel("range,\nvs Pinax (%)")
-    bottom.set_xlabel(xlabel)
-    # Headroom so the reference row at 0 is not welded to the panel's top edge,
-    # and so the largest deviation is not clipped against the bottom.
-    low = min(100 * (measured[m][n][0] / measured[reference][n][0] - 1)
-              for m in measured for n in frames)
-    bottom.set_ylim(1.15 * low, -0.08 * low)
-    fig.text(0.5, 0.005, caption, ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.16, 1, 1))
-    return fig
-
-
 def pool_range_by_model():
     """Section 4.2, on real frames: the same range disagreement, measured.
 
@@ -647,15 +559,7 @@ def pool_range_by_model():
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
     ax.set_title("Two independent routes to range,\nand one that disagrees with both", fontsize=9)
     spread = abs(departure["In-water SVP"]) + abs(departure["Pinax"])
-    fig.text(0.5, 0.005,
-             "Ten pool frames. Every range is absolute, solved from the board's calipered geometry "
-             "\u2014 the object supplies\nthe metric scale, the camera model only the angles. The "
-             "reference is the mean of the two corrected models,\nwhich share no data and differ by "
-             f"{spread:.1f} %: one is fitted to underwater frames and holds no refraction theory, the "
-             f"other\ncomes from the in-air calibration and never sees one. An uncorrected port sits "
-             f"{abs(departure['Uncorrected']):.0f} % below both.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.20, 1, 0.94))
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
     return fig, "pool-range-by-camera-model"
 
 
@@ -741,17 +645,7 @@ def pool_end_to_end():
     ax.legend(fontsize=7.4, frameon=False, loc="lower right", ncol=3,
               handletextpad=0.3, columnspacing=1.2)
     ax.set_title("Camera-only end to end: measuring a 549.0 mm span")
-    fig.text(0.5, 0.005,
-             "Ten pool frames; each model calibrates the laser with itself, so every pipeline is "
-             "internally consistent.\nMedian "
-             + " / ".join(f"{m:+.1f}" for m, _ in summary)
-             + " %, worst " + " / ".join(f"{w:.1f}" for _, w in summary)
-             + " %, in legend order. All three land on the calipered span, including the\n"
-             "uncorrected one: its range and magnification errors are both about a quarter, and "
-             "they cancel. Length cannot\nseparate these models \u2014 \u00a74.1's "
-             "ground-truth-free test is what does.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.20, 1, 0.93))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     return fig, "pool-end-to-end-board-span-by-camera-model"
 
 
@@ -867,15 +761,7 @@ def pool_decoy_length():
     right.set_ylim(-8.0, 4.0)
 
     fig.suptitle("The cancellation, on a real fish", y=0.99)
-    fig.text(0.5, 0.005,
-             f"{len(kept)} of {len(frames)} decoy frames; {len(dropped)} rejected for a mask whose "
-             "aspect ratio misses the calipered 2.95 by more than a quarter.\nThe uncorrected model "
-             f"ranges {abs(departure['Uncorrected']):.0f} % short of the in-water calibration and "
-             f"Pinax sits within {abs(departure['Pinax']):.1f} %, yet all three read the same length\n"
-             "(median " + " / ".join(f"{m:+.1f}" for m in summary)
-             + " %, in legend order). Length cannot see the error that range shows plainly.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.17, 1, 0.94))
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
     return fig, "pool-decoy-length-by-camera-model"
 
 
