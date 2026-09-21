@@ -142,7 +142,7 @@ focal-length error would be uniform.
 
 We photographed one checkerboard (14 × 10 interior corners, 42 mm pitch) with one
 camera in air and then in a pool the same afternoon — a matched pair with no confound
-in camera, target, or operator. 63 in-air and 121 in-water frames yielded corners.
+in camera, board, or operator. 63 in-air and 121 in-water frames yielded corners.
 
 **Three pipelines are compared throughout.** *Uncorrected* uses the in-air
 calibration underwater unchanged -- the do-nothing baseline. *In-water SVP* is an
@@ -355,7 +355,7 @@ as text or evidence.
    measuring at all.
  - Status: a pilot is being shot. Report it or state it as enabled-but-untested; do not
    claim it works until it has.
- - Building and grading the target itself belongs to the deployability paper; what is
+ - Building and grading the brick target itself belongs to the deployability paper; what is
    claimed here is the enablement.
 
  CLOSE THE LOOP. "Good enough to replace the wet session" now has a number, from a
@@ -364,7 +364,7 @@ as text or evidence.
  the wrong intrinsics. Written up as tests/test_calibration_budget.py.
 
  - Report the two regimes, because they have **opposite** sensitivities and getting
-   them the wrong way round would mean optimising the target for the wrong parameter.
+   them the wrong way round would mean optimising the brick target for the wrong parameter.
    Trusting the laser's bench extrinsics, range and extent scale together so a focal
    error cancels out of the length (5 % of focal length -> 0.1 % of length) while the
    principal point is ruinous (5 px -> 5.5 %), because the dot's offset from the
@@ -375,12 +375,12 @@ as text or evidence.
  - So the in-air calibration's binding parameter is the **focal length**, and an
    anisotropy reaches only the axis it lies on: `fx` 1 % high costs 1.0 % on a fish
    held across the frame and 0.001 % on one held along it. That is the cleanest
-   statement of why the target is three-dimensional.
+   statement of why the brick target is three-dimensional.
  - The closing number: the measured in-air calibration (fx +0.033 %, fy +0.017 %,
    principal point within a few px) propagates to **0.04 % of length**, against the
    15 % worst-case budget of §8. The floor underneath every figure here is Pinax's own
    approximation against the exact model, 0.0003 %.
- - Two sensitivities of the target, same method. Misspecifying the brick chamfer by
+ - Two sensitivities of the brick target, same method. Misspecifying the brick chamfer by
    +/-0.15 mm moves fx by less than the estimator's own scatter, so the one constant
    that is not published precisely is not binding. Assembly slop is: about 1 % of
    length at 0.2 mm of per-brick placement error, and it leaves the fx/fy ratio alone.
@@ -463,7 +463,7 @@ cost off the port alone.
   measured.
 - **The reachable envelope is computed, not measured, at its tail.** The p99 and maximum
   of §4.2 come from simulating each real (length, range) pair; our own photographs never
-  put a known target in the close-range oblique geometry where the error is largest, and
+  put a known-size object in the close-range oblique geometry where the error is largest, and
   the rig cannot be made to — the dot would have to land on a surface 12 cm away. The
   median and p90 are corroborated by §6; the tail is not.
 - **Fish bearing is unobserved.** The envelope maximises over it because the corpus does
@@ -511,13 +511,13 @@ cost off the port alone.
   fleet returns 0.99141 +- 0.00044 across seven cameras from seven independent
   calibrations -- real, reproducible, and eight times better determined than the focal
   length those calibrations were measuring. Two explanations fit: an anisotropic sensor
-  or detector, fixed in sensor coordinates; or an anisotropic printed target, fixed to the
-  board. The fleet-wide agreement does not separate them, because all seven share a target
+  or detector, fixed in sensor coordinates; or an anisotropic printed board, fixed in the
+  board's own frame. The fleet-wide agreement does not separate them, because all seven share a board
   design.
 
   We calipered the board. Corner to corner its pitches are 42.2308 mm (long axis) and
   42.1111 mm (short), a 0.28% anisotropy in the *opposite* direction, which makes the
-  camera-side term larger rather than smaller: 0.97%. On that reading the target is not
+  camera-side term larger rather than smaller: 0.97%. On that reading the board is not
   the cause. We do not present it as settled. The short axis spans only 9 pitches, so a
   1 mm reading error is 0.26% of it; a reading of 377.5 mm would make the camera exactly
   square; and two careful attempts at that span differed by 5 mm. The question lives
@@ -525,10 +525,10 @@ cost off the port alone.
 
   The test that decides it needs no length measurement: one calibration session shot in
   portrait. A sensor-side anisotropy is fixed in sensor coordinates and is unchanged by
-  rotating the camera; a target-side one inverts about 1.0. We have not run it.
+  rotating the camera; a board-side one inverts about 1.0. We have not run it.
 
   Two things are already firm. A single scalar square size cannot express an anisotropic
-  target, which is a limitation of every calibration path here and in the production
+  board, which is a limitation of every calibration path here and in the production
   pipeline. And none of our results turn on the answer: across the nominal board, an
   earlier edge-to-edge reading, and the corner-to-corner one -- a 1.4% spread in assumed
   geometry -- the end-to-end rows of section 6.1 move by at most 0.5 percentage points.
@@ -573,8 +573,8 @@ in that state.
 | §5 | `sim-calibration-error-budget-by-laser-regime` | final | Trusting the bench, range and extent scale together and the focal error cancels; the dot sits ~80 px off axis at 4 m, so the principal point is ruinous. Re-fitting the beam absorbs the principal point and, by pinning the range, destroys that cancellation. Dotted line is the 15 % worst-case budget. |
 | §5 | `sim-target-sensitivity-to-build-quality` | final | Misspecifying the chamfer by ±0.15 mm moves fx by less than the estimator's own scatter. Assembly slop does bind — about 1 % of length at 0.2 mm — and it leaves the fx/fy ratio, the quantity the tower is for, alone. |
 | §5 | `target-detection-on-one-view` | **placeholder** | The brick target found in a single view: brick faces matched to the model outlined in magenta, faces found but not matched in grey, and the lattice points the pose is solved from marked as dots. Placeholder -- this is a rendered view, and nothing in this paper has yet been run against a photograph of the built target. |
-| §5 | `target-focal-ratio-vs-view-count` | **placeholder** | Both stay inside ±0.1 % from four views on. The anisotropy being recovered is 1.09 % — about thirty times the residual error — and no view here is rolled, which is the case a planar board cannot settle. |
-| §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** | Thirteen frames of the 312.5 mm decoy, both calibrations taken in air and both corrected identically, so the target is the only difference. Section 4 settles the correction; this settles the reference. |
+| §5 | `target-focal-ratio-vs-view-count` | **placeholder** | Both stay inside ±0.1 % from four views on. The anisotropy being recovered is 1.09 % — about thirty times the residual error — and no view here is rolled, which is the case a planar board cannot settle. Placeholder: these are real fits, but to rendered views rather than photographs of the built target, and `classify_colours` is the part that will need retuning on real frames. |
+| §5 | `target-pool-length-lego-vs-checkerboard` | **placeholder** | Placeholder: this experiment has not been run, and the plotted values come from a fixed seed. It will show the 312.5 mm decoy measured against two in-air calibrations — one on the brick target, one on the checkerboard — corrected identically, so the calibration target is the only thing differing. §4 settles the correction; this settles the reference. |
 | §6 | `pool-end-to-end-board-span-by-camera-model` | final | Ten pool frames; each model calibrates the laser with itself, so every pipeline is internally consistent. Median +0.3 / -0.2 / -0.3 %, worst 1.8 / 1.6 / 1.6 %, in legend order. All three land on the calipered span, including the uncorrected one: its range and magnification errors are both about a quarter, and they cancel. Length cannot separate these models — §4.1's ground-truth-free test is what does. |
 | §6 | `pool-decoy-length-by-camera-model` | final | 12 of 13 decoy frames; 1 rejected for a mask whose aspect ratio misses the calipered 2.95 by more than a quarter. The uncorrected model ranges 25 % short of the in-water calibration and Pinax sits within 0.6 %, yet all three read the same length (median -2.6 / -2.8 / -2.7 %, in legend order). Length cannot see the error that range shows plainly. |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final | What assuming the water index costs. Both models are calibrated for fresh water and the true index is then swept across it; both degrade at the same rate, because the error is in the physics and not in either correction. What differs is the price of fixing it: Pinax takes the index as a parameter, while an in-water calibration needs another session in water of the right salinity. Note the geometry -- the fish sits at half the frame half-width here, further off axis than §4.2's reachable envelope allows, so these are upper bounds; §8 gives the reachable figures. |
