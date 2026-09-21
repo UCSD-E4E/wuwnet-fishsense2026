@@ -609,7 +609,14 @@ def pool_range_by_model():
 
     ranges = {name: np.array([board_range(fn, n) for n in frames])
               for name, fn in models.items()}
-    reference = ranges["In-water SVP"]
+
+    # The reference is the mean of the two *corrected* models, not either one of
+    # them. Using one would put it on the identity line by construction and make
+    # it look like the answer rather than one of two independent opinions; with
+    # the mean, both show their real scatter about it and neither is privileged.
+    # It is still not truth -- no range on real frames is -- which is why the
+    # line says the two agree rather than that either is right.
+    reference = 0.5 * (ranges["In-water SVP"] + ranges["Pinax"])
 
     fig, ax = plt.subplots(figsize=(4.8, 4.4))
     lo, hi = 0.6, 1.08 * reference.max()
@@ -619,25 +626,26 @@ def pool_range_by_model():
                 fontsize=7.2, color="#4a4a47", rotation=45, rotation_mode="anchor")
 
     departure = {}
-    for name in ("Uncorrected", "Pinax"):
+    for name in models:
         style = figstyle.pipeline(name, line=False)
         ax.plot(reference, ranges[name], marker=MARKERS[name], markersize=6,
                 linestyle="none", label=name, zorder=3, markeredgewidth=1.4,
                 markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         departure[name] = np.median(100 * (ranges[name] / reference - 1))
 
-    ax.set_xlabel("range from the in-water SVP calibration (m)")
-    ax.set_ylabel("range from the model under test (m)")
+    ax.set_xlabel("mean of the two corrected models (m)")
+    ax.set_ylabel("range from each model (m)")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect("equal", adjustable="box")
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
     ax.set_title("Two independent routes to range,\nand one that disagrees with both", fontsize=9)
+    spread = abs(departure["In-water SVP"]) + abs(departure["Pinax"])
     fig.text(0.5, 0.005,
-             "Ten pool frames, each range taken from the board's own pose. The in-water "
-             "calibration is fitted to\nunderwater frames and contains no refraction theory; Pinax "
-             "comes from the in-air calibration and never\nsees one. They agree to "
-             f"{abs(departure['Pinax']):.1f} %. An uncorrected port sits {abs(departure['Uncorrected']):.0f} % "
-             "below both \u2014 the 1/n_w the simulation predicts.",
+             "Ten pool frames, each range from the board's own pose, against the mean of the two "
+             "corrected models.\nThe in-water calibration is fitted to underwater frames and holds "
+             "no refraction theory; Pinax comes from\nthe in-air calibration and never sees one. "
+             f"They share no data and differ by {spread:.1f} %. An uncorrected port sits\n"
+             f"{abs(departure['Uncorrected']):.0f} % below both \u2014 the 1/n_w the simulation predicts.",
              ha="center", va="bottom", fontsize=7.2, color="#52514e")
     fig.tight_layout(rect=(0, 0.20, 1, 0.94))
     return fig, "pool-range-by-camera-model"
