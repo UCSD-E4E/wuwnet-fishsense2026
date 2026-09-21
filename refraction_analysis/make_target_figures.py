@@ -661,9 +661,9 @@ def pool_decoy_length():
     each other. Read that carefully: it is **not** evidence that the uncorrected
     model is fine, and it is not evidence that the correction is unnecessary. It
     is evidence that this measurement cannot tell, which is section 4.2's
-    prediction arriving on real fish. The dot has to land on the body, so the
-    body sits near the optical axis, and there the port's range error and its
-    magnification error move together and cancel out of the length. Anything
+    prediction arriving on a fish-shaped body. The dot has to land on the decoy,
+    so the decoy sits near the optical axis, and there the port's range error and
+    its magnification error move together and cancel out of the length. Anything
     claiming the uncorrected model is bad has to come from section 4.1, whose
     test needs no range and therefore has nothing to cancel against.
 
@@ -708,7 +708,7 @@ def pool_decoy_length():
     # run through the same model, the 1/n_w factor divides out, and every model
     # lands on the identity line by construction -- which reads as though
     # nothing is wrong. The two panels below separate the halves instead, which
-    # is the whole claim on a real fish: the range is a quarter out and the
+    # is the whole claim on the decoy: the range is a quarter out and the
     # length is not.
     measured, lengths = {}, {}
     for name, correct in models.items():
@@ -760,7 +760,7 @@ def pool_decoy_length():
     right.set_title("Length: the same for all three", fontsize=8.5)
     right.set_ylim(-8.0, 4.0)
 
-    fig.suptitle("The cancellation, on a real fish", y=0.99)
+    fig.suptitle("The cancellation, on a fish-shaped decoy", y=0.99)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     return fig, "pool-decoy-length-by-camera-model"
 
