@@ -57,3 +57,8 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-root = ""
 module-name = "fishsense_wuwnet"
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: multi-minute checks (the reachable-envelope corpus run); deselect with -m 'not slow'",
+]

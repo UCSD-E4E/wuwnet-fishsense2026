@@ -41,7 +41,8 @@ object is measured** — roughly forty times more than by dot detection.
 
 ```bash
 uv sync
-uv run pytest                                      # 82 tests
+uv run pytest -m "not slow"                         # fast suite
+uv run pytest                                      # + the reachable-envelope corpus run (~2 min)
 uv run jupyter lab                                 # refraction_analysis/
 uv run python refraction_analysis/make_figures.py  # figures/ as PDF and PNG
 ```

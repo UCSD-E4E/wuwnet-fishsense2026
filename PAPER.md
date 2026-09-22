@@ -199,7 +199,11 @@ remains is prose.
    the in-water calibration) is **not reachable**, and saying so is the section's point.
    The dot must be on the fish; 2500 px would put the surface ~12 cm from the port.
  - The reachable envelope, over every (length, range) pair in the production corpus with
-   the measured dot placement and the worst bearing at each:
+   the measured dot placement and the worst bearing at each. Computed by
+   `fishsense_wuwnet/envelope.py` from `data/corpus_length_range.npz` and pinned by
+   `tests/test_envelope.py`; the range is triangulated through the model under test, so
+   this is the *delivered* length error, not the raw differential magnification (which is
+   ~3x larger and is a quantity the rig never produces):
        p50 1.2 %   p75 1.4 %   p90 3.0 %   p95 5.5 %   p99 11.5 %   max 14.3 %
        over 5 %: 5.6 % of frames.  over 15 %: none.
  - Real data agrees: the camera-only end-to-end of §6 reads +0.3 % median and 1.8 % worst
