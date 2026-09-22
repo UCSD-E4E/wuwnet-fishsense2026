@@ -384,8 +384,9 @@ def focal_ratio_vs_views():
         ax.set_title(title, fontsize=9)
         # Shared, and that is the whole point: on one scale the ratio's scatter
         # is visibly a fraction of the focal length's. Given separate limits
-        # each panel fills its own axes and the comparison disappears.
-        ax.set_ylim(-9.0, 9.0)
+        # each panel fills its own axes and the comparison disappears. The lower
+        # bound clears the widest scale draw (~-10 %) so no point is clipped.
+        ax.set_ylim(-11.0, 4.0)
         ax.legend(fontsize=7.2, frameon=False, loc="lower right")
     axes[0].set_ylabel("difference from the checkerboard (%)")
     fig.suptitle("A brick target pins the ratio better than the scale")
