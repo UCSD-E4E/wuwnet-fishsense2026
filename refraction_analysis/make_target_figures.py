@@ -365,7 +365,6 @@ def focal_ratio_vs_views():
     board_K, board_d = lego["board_K"], lego["board_d"]
     rng = np.random.default_rng(0)
 
-    full = _lego_calibrate(obj, img, board_K, board_d)
     board_ratio = board_K[0, 0] / board_K[1, 1]
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.2))
@@ -390,13 +389,9 @@ def focal_ratio_vs_views():
         ax.legend(fontsize=7.2, frameon=False, loc="lower right")
     axes[0].set_ylabel("difference from the checkerboard (%)")
     fig.suptitle("A brick target pins the ratio better than the scale")
-    fig.text(0.5, 0.005,
-             f"12 random subsets at each size, 21 views in all. At the full set the focal length sits "
-             f"{100*(full[0,0]/board_K[0,0]-1):+.2f} % from the\ncheckerboard and the ratio "
-             f"{100*((full[0,0]/full[1,1])/board_ratio-1):+.2f} %, but the ratio is the far tighter of the two "
-             f"across subsets.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.13, 1, 1))
+    # No baked subcaption: the numbers belong in the LaTeX \caption, where they
+    # cannot go stale in the image.
+    fig.tight_layout()
     return fig, "target-focal-ratio-vs-view-count"
 
 
