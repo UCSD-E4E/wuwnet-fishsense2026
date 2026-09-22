@@ -409,7 +409,7 @@ def target_lego_vs_checkerboard():
     reference is the only thing differing.
 
     This is a different claim from recovering the same intrinsics, and a more
-    useful one. The two calibrations disagree by 0.4 % on focal length, 0.9 % on
+    useful one. The two calibrations disagree by ~2 % on focal length and ~0.8 % on
     the ratio and over a hundred pixels on the principal point; what is reported
     here is what that disagreement is worth once it has passed through a
     per-dive beam fit and arrived at a length.
@@ -480,17 +480,14 @@ def target_lego_vs_checkerboard():
                                                ("s", "o")):
         ax.plot(shared, e, marker, color=colour, ms=6, alpha=0.85,
                 label=f"{label}: median {np.median(e):+.2f} %")
-    gap = series["brick target"][1] - series["checkerboard"][1]
     ax.set_xlabel("range to the decoy (m)")
     ax.set_ylabel("length error (%)")
     ax.legend(fontsize=7.4, frameon=False)
     ax.set_title("Same decoy, same correction, two in-air calibration targets")
-    fig.text(0.5, 0.005,
-             f"{len(kept)} frames of the calipered 312.5 mm decoy. The two calibrations differ by "
-             f"0.4 % in focal length\nand 0.9 % in fx/fy; the length they deliver differs by "
-             f"{np.median(np.abs(gap)):.2f} pp at the median and {np.abs(gap).max():.2f} pp at worst.",
-             ha="center", va="bottom", fontsize=7.2, color="#52514e")
-    fig.tight_layout(rect=(0, 0.13, 1, 1))
+    # No baked subcaption: the numbers (2.25 % focal, 0.79 % fx/fy, 0.04-0.18 pp
+    # delivered) live in the LaTeX \caption, so they cannot go stale in the image
+    # -- which is exactly how the old 20-view 0.4/0.9 figures survived here.
+    fig.tight_layout()
     return fig, "target-pool-length-lego-vs-checkerboard"
 
 
@@ -676,36 +673,38 @@ def pool_range_by_model():
     ranges = {name: np.array([board_range(fn, n) for n in frames])
               for name, fn in models.items()}
 
-    # The reference is the mean of the two *corrected* models, not either one of
-    # them. Using one would put it on the identity line by construction and make
-    # it look like the answer rather than one of two independent opinions; with
-    # the mean, both show their real scatter about it and neither is privileged.
-    # It is still not truth -- no range on real frames is -- which is why the
-    # line says the two agree rather than that either is right.
-    reference = 0.5 * (ranges["In-water SVP"] + ranges["Pinax"])
+    # The corrected reference is Pinax. An in-water single-viewpoint fit agrees
+    # with it to better than a percent -- an independent check, since it is
+    # fitted to the underwater frames and holds no refraction theory -- but the
+    # paper never defines that model, so showing it here as a second corrected
+    # series only invites the question of why there are two. It is dropped, and
+    # the figure makes the one claim it needs: the uncorrected port reads a
+    # quarter short of the corrected range.
+    reference = ranges["Pinax"]
 
     fig, ax = plt.subplots(figsize=(4.8, 4.4))
     lo, hi = 0.6, 1.08 * reference.max()
     ax.plot([lo, hi], [lo, hi], color="#4a4a47", lw=1.0, zorder=1)
-    ax.annotate("the two agree", xy=(lo + 0.58 * (hi - lo), lo + 0.58 * (hi - lo)),
+    ax.annotate("Pinax reference", xy=(lo + 0.58 * (hi - lo), lo + 0.58 * (hi - lo)),
                 xytext=(7, -4), textcoords="offset points", ha="left", va="top",
                 fontsize=7.2, color="#4a4a47", rotation=45, rotation_mode="anchor")
 
     departure = {}
     for name in models:
+        if name == "In-water SVP":
+            continue  # a second corrected series the paper never defines; see reference note
         style = figstyle.pipeline(name, line=False)
         ax.plot(reference, ranges[name], marker=MARKERS[name], markersize=6,
                 linestyle="none", label=name, zorder=3, markeredgewidth=1.4,
                 markerfacecolor="none" if name == "Pinax" else style["color"], **style)
         departure[name] = np.median(100 * (ranges[name] / reference - 1))
 
-    ax.set_xlabel("mean of the two corrected models (m)")
+    ax.set_xlabel("Pinax range (m)")
     ax.set_ylabel("range from each model (m)")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect("equal", adjustable="box")
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
-    ax.set_title("Range from the board's own pose:\ntwo routes agree, one does not", fontsize=9)
-    spread = abs(departure["In-water SVP"]) + abs(departure["Pinax"])
+    ax.set_title("Range from the board's own pose:\nthe uncorrected port reads a quarter short", fontsize=9)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     return fig, "pool-range-by-camera-model"
 
