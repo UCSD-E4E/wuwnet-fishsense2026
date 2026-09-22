@@ -62,9 +62,23 @@ from fishsense_wuwnet.target_render import look_at, render
 CAMERA = np.array([[2876.0, 0.0, 2000.0], [0.0, 2845.0, 1500.0], [0.0, 0.0, 1.0]])
 _D0, _VCOP, _ = optimal_d0(0.006, 1.49, SWEET_WATER, np.radians(41.0))
 PORT = FlatPort(_D0, 0.006, 1.49, SWEET_WATER)
-BEAM_ORIGIN = np.array([-0.04, -0.11, 0.0])
+#: Bench transverse offset, 104 mm, in the near-vertical direction the mount
+#: actually uses -- section 4.2 turns on that direction, because a horizontally
+#: held fish then extends tangentially rather than radially. The magnitude was
+#: previously a simulation constant of 117 mm carried over from the tests, which
+#: put the envelope annotation at 15.0 deg for the wrong reason.
+BEAM_ORIGIN = 0.104 * np.array([-0.04, -0.11, 0.0]) / np.hypot(0.04, 0.11)
 BEAM_AXIS = np.array([0.0, 0.0, 1.0])
-LENGTH, DOT_FRACTION = 0.30, 0.52
+LENGTH = 0.30
+
+#: Where the dot lands along the body, measured over the production corpus:
+#: inside the span in 100 % of frames, at 0.40-0.65 of body length from the
+#: tail, median 0.52. The median is what a typical measurement looks like; the
+#: 0.40 end is what bounds the envelope, because it puts the far tip furthest
+#: from the axis. Quoting a centred dot understates that bound by 1.6 deg at
+#: 1 m, and section 3 would contradict it.
+DOT_FRACTION = 0.52
+DOT_FRACTION_WORST = 0.40
 CALIBRATION_RANGES = np.array([0.8, 1.2, 1.8, 2.5, 3.5, 4.5])
 RANGES = np.array([1.0, 1.5, 2.0, 3.0, 4.0])
 
@@ -155,10 +169,11 @@ def field_angle_collapse():
                 label=f"f = {focal:.0f} px  ({np.degrees(np.arctan(2500/focal)):.0f}° half-FOV)")
 
     offset = np.linalg.norm(BEAM_ORIGIN)
-    far_tip = np.degrees(np.arctan((offset + LENGTH / 2) / 1.0))
+    # The far tip, not the half-length: the dot is not centred on the body.
+    far_tip = np.degrees(np.arctan((offset + (1.0 - DOT_FRACTION_WORST) * LENGTH) / 1.0))
     ax.axvspan(0, far_tip, color=figstyle.SERIES[2], alpha=0.10, lw=0)
-    ax.annotate(f"reachable: the dot must be on the fish,\nso nothing exceeds {far_tip:.0f}° even at 1 m",
-                xy=(far_tip, 3.0), xytext=(19.0, 9.0), fontsize=7.4, color="#52514e",
+    ax.annotate(f"reachable: the dot must be on the fish,\nso nothing exceeds {far_tip:.1f}° even at 1 m",
+                xy=(far_tip, 3.0), xytext=(20.5, 24.0), fontsize=7.4, color="#52514e",
                 arrowprops=dict(arrowstyle="->", color="#8a8a85", lw=0.9))
     ax.set_xlabel("field angle (degrees)")
     ax.set_ylabel("uncorrected length error (%)")

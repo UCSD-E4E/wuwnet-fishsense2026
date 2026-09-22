@@ -33,7 +33,11 @@ CAMERA = np.array([[2876.0, 0.0, 2000.0], [0.0, 2845.0, 1500.0], [0.0, 0.0, 1.0]
 _D0, _VIRTUAL_COP, _ = optimal_d0(0.006, 1.49, SWEET_WATER, np.radians(41.0))
 PORT = FlatPort(_D0, 0.006, 1.49, SWEET_WATER)
 
-BEAM_ORIGIN = np.array([-0.04, -0.11, 0.0])
+# Bench transverse offset, 104 mm, in the near-vertical direction the mount
+# uses. Section 3 states that magnitude and section 6 recovers 103.0 mm through
+# Pinax, so the simulation constant of 117 mm this previously carried was simply
+# inconsistent with the paper it supports.
+BEAM_ORIGIN = 0.104 * np.array([-0.04, -0.11, 0.0]) / np.hypot(0.04, 0.11)
 BEAM_AXIS = np.array([0.0, 0.0, 1.0])
 LENGTH = 0.30
 DOT_FRACTION = 0.52  # where on the body the dot actually lands, from the corpus
