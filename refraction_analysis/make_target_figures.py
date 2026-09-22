@@ -141,6 +141,17 @@ def error_budget():
     return fig, "sim-calibration-error-budget-by-laser-regime"
 
 
+def _dot_air_angle(range_m=2.0):
+    """Where the dot sits, as an air-side angle -- the reference the error is measured from.
+
+    Derived rather than written as a constant: the dot is at
+    arctan(|O|/Z) in the water, which at 2 m is 2.98 degrees, and the air-side
+    angle the pixel radius encodes is 3.97.
+    """
+    scene = np.arctan(np.linalg.norm(BEAM_ORIGIN) / range_m)
+    return float(np.degrees(np.arcsin(np.clip(SWEET_WATER * np.sin(scene), -1.0, 1.0))))
+
+
 def _perturb(fx=1.0, fy=1.0, dcx=0.0, dcy=0.0):
     used = CAMERA.copy()
     used[0, 0] *= fx
@@ -153,7 +164,21 @@ def _perturb(fx=1.0, fy=1.0, dcx=0.0, dcy=0.0):
 # --------------------------------------------------------------------------
 # Finished: the port's error is a function of field angle, not of the lens
 # --------------------------------------------------------------------------
+def _to_scene(air_deg, n_water=SWEET_WATER):
+    """Air-side (image) field angle to scene-side (in-water) direction, degrees.
+
+    The two sides of the port are not the same angle and the difference is
+    large: 15.9 degrees in the water is 21.4 in the air. Everything this paper
+    derives from the rig's geometry -- the laser offset, the fish's extent, the
+    ranges -- lives in the water, so the scene side is the one a reader can
+    check against the prose, and the one this figure is drawn in.
+    """
+    return np.degrees(np.arcsin(np.clip(np.sin(np.radians(air_deg)) / n_water, -1.0, 1.0)))
+
+
 def field_angle_collapse():
+    # Computed against the *air-side* angle, because that is what a pixel
+    # radius is: r = f tan(alpha). Plotted against the scene side.
     angles = np.linspace(0.5, 35.0, 60)
     flatten = lambda d: d[..., :2] / d[..., 2:3]
     fig, ax = plt.subplots(figsize=(7.0, 3.3))
@@ -164,18 +189,27 @@ def field_angle_collapse():
         error = 100 * differential_length_error(
             unc, pin, principal_point=K[:2, 2],
             radii=focal * np.tan(np.radians(angles)),
-            laser_radius=focal * np.tan(np.radians(4.0)), extent="radial")
-        ax.plot(angles, error, color=figstyle.SERIES[i], ls=figstyle.DASHES[i], lw=2.0,
+            laser_radius=focal * np.tan(np.radians(_dot_air_angle())), extent="radial")
+        ax.plot(_to_scene(angles), error, color=figstyle.SERIES[i], ls=figstyle.DASHES[i], lw=2.0,
                 label=f"f = {focal:.0f} px  ({np.degrees(np.arctan(2500/focal)):.0f}° half-FOV)")
 
     offset = np.linalg.norm(BEAM_ORIGIN)
-    # The far tip, not the half-length: the dot is not centred on the body.
+    # The far tip, not the half-length: the dot is not centred on the body. This
+    # is already a scene-side angle -- the offset and the fish are in the water
+    # -- so it is plotted directly, with no conversion.
     far_tip = np.degrees(np.arctan((offset + (1.0 - DOT_FRACTION_WORST) * LENGTH) / 1.0))
     ax.axvspan(0, far_tip, color=figstyle.SERIES[2], alpha=0.10, lw=0)
+    # Text in the empty wedge under the curve, with a panel behind it: the
+    # curve climbs steeply past the shaded edge, so anything placed above it
+    # ends up written across the data.
     ax.annotate(f"reachable: the dot must be on the fish,\nso nothing exceeds {far_tip:.1f}° even at 1 m",
-                xy=(far_tip, 3.0), xytext=(20.5, 24.0), fontsize=7.4, color="#52514e",
-                arrowprops=dict(arrowstyle="->", color="#8a8a85", lw=0.9))
-    ax.set_xlabel("field angle (degrees)")
+                xy=(far_tip, 2.0), xytext=(18.5, 1.0), fontsize=7.4, color="#3f3e3b",
+                ha="left", va="bottom",
+                bbox=dict(boxstyle="round,pad=0.35", facecolor="white",
+                          edgecolor="#d8d6d1", lw=0.7, alpha=0.92),
+                arrowprops=dict(arrowstyle="->", color="#8a8a85", lw=0.9,
+                                connectionstyle="arc3,rad=-0.2"))
+    ax.set_xlabel("scene field angle, in water (degrees)")
     ax.set_ylabel("uncorrected length error (%)")
     ax.legend(fontsize=7.4, frameon=False, loc="upper left")
     ax.set_title("A flat port's error follows the field angle, not the lens")
@@ -224,38 +258,78 @@ def build_quality():
 
 
 # --------------------------------------------------------------------------
-# Placeholders: everything that should be a photograph
+# The built target, on photographs
+#
+# These three were placeholders until the target was built and shot. They run
+# on 21 raw frames of it, cached in `data/lego_target_raw.npz` so that they
+# redraw without the image archive, as the board and laser caches do.
+#
+# Raw rather than JPEG, and not for tidiness: the TG-6 applies an in-camera lens
+# correction to its JPEGs, so JPEG geometry is not the sensor's geometry. On
+# this board the radial term measures k1 = -0.147 in raw against +0.011 in JPEG.
 # --------------------------------------------------------------------------
-SIZE = (2200, 1650)
-SMALL = np.array([[1570.0, 0.0, 1100.0], [0.0, 1553.0, 825.0], [0.0, 0.0, 1.0]])
+LEGO_CACHE = DATA / "lego_target_raw.npz"
+SENSOR = (4014, 3016)
+_LEGO: dict = {}
+
+#: Distortion is held at the board's value and only the intrinsic matrix is
+#: solved. A tower 144 mm across spans too little depth to condition five
+#: distortion terms; fitted freely they come back k2 = -0.38 with k3 = +0.68,
+#: the signature of a radial series absorbing what it can reach. Fixing it makes
+#: this a statement about K, which is what section 5 is about.
+_FIX_DIST = (cv2.CALIB_USE_INTRINSIC_GUESS | cv2.CALIB_FIX_K1 | cv2.CALIB_FIX_K2
+             | cv2.CALIB_FIX_K3 | cv2.CALIB_FIX_TANGENT_DIST)
+
+
+def _lego():
+    """Cached brick-target correspondences, plus the board calibration to compare with."""
+    if _LEGO:
+        return _LEGO
+    z = np.load(LEGO_CACHE, allow_pickle=False)
+    views = sorted(k.split("/", 1)[1] for k in z.files if k.startswith("obj/"))
+    objp = board_object_points().astype(np.float32)
+    garage = cache_by_session(load_corner_cache(DATA / "board_corners_raw.npz"), "garage_lens")
+    names = sorted(garage)
+    guess = np.array([[2900.0, 0, SENSOR[0] / 2], [0, 2900.0, SENSOR[1] / 2], [0, 0, 1.0]])
+    _, board_K, board_d, _, _ = cv2.calibrateCamera(
+        [objp for _ in names],
+        [garage[n].reshape(-1, 1, 2).astype(np.float32) for n in names],
+        SENSOR, guess, None, flags=cv2.CALIB_USE_INTRINSIC_GUESS)
+    _LEGO.update(raw=z, views=views, board_K=board_K, board_d=board_d,
+                 obj=[z[f"obj/{v}"] for v in views], img=[z[f"img/{v}"] for v in views])
+    return _LEGO
+
+
+def _lego_calibrate(obj, img, board_K, board_d):
+    _, K, _, _, _ = cv2.calibrateCamera(obj, img, SENSOR, board_K.copy(), board_d.copy(),
+                                        flags=_FIX_DIST)
+    return K
 
 
 def detection_example():
-    rotation, translation = look_at((300.0, -380.0, 210.0))
-    view = render(SMALL, rotation, translation, size=SIZE)
-    quads = detect_quads(view.image, min_area_px=60.0)
-    found = match(quads, SMALL, min_faces=4)
+    """The detector on one photograph of the built target.
 
-    # Matched and unmatched are drawn differently, and in colours the target
-    # does not itself contain -- outlining bricks in yellow on a target with
-    # yellow bricks hides the thing the figure is about.
-    canvas = cv2.cvtColor(view.image, cv2.COLOR_BGR2RGB)
-    matched_centres = found.image_points.reshape(-1, 4, 2).mean(axis=1)
+    The frame is cached downscaled for display; the outlines are the
+    full-resolution detections, which is what the figure is about.
+    """
+    z = _lego()["raw"]
+    image = cv2.imdecode(z["frame/image"], cv2.IMREAD_COLOR)
+    scale = float(z["frame/scale"][0])
+    quads, matched = z["frame/quads"] * scale, z["frame/matched"] * scale
+
+    canvas = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    centres = matched.reshape(-1, 4, 2).mean(axis=1)
     for quad in quads:
-        claimed = (
-            len(matched_centres)
-            and np.linalg.norm(matched_centres - quad.centre, axis=1).min() < 5.0
-        )
-        cv2.polylines(
-            canvas, [quad.corners.round().astype(np.int32)], True,
-            (233, 30, 160) if claimed else (120, 120, 120),
-            2 if claimed else 1, cv2.LINE_AA)
-    for point in found.image_points:
-        cv2.circle(canvas, tuple(point.round().astype(int)), 6, (255, 255, 255), -1, cv2.LINE_AA)
-        cv2.circle(canvas, tuple(point.round().astype(int)), 4, (16, 24, 40), -1, cv2.LINE_AA)
+        claimed = np.linalg.norm(centres - quad.mean(axis=0), axis=1).min() < 5.0
+        cv2.polylines(canvas, [np.round(quad).astype(np.int32)], True,
+                      (233, 30, 160) if claimed else (120, 120, 120),
+                      2 if claimed else 1, cv2.LINE_AA)
+    for point in matched:
+        cv2.circle(canvas, tuple(np.round(point).astype(int)), 4, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.circle(canvas, tuple(np.round(point).astype(int)), 2, (16, 24, 40), -1, cv2.LINE_AA)
 
-    xs, ys = found.image_points[:, 0], found.image_points[:, 1]
-    pad = 60
+    pad = 30
+    xs, ys = matched[:, 0], matched[:, 1]
     crop = canvas[max(int(ys.min()) - pad, 0):int(ys.max()) + pad,
                   max(int(xs.min()) - pad, 0):int(xs.max()) + pad]
     fig, ax = plt.subplots(figsize=(5.4, 4.0))
@@ -263,102 +337,159 @@ def detection_example():
     ax.set_xticks([]); ax.set_yticks([]); ax.grid(False)
     for spine in ax.spines.values():
         spine.set_visible(False)
-    ax.set_title(f"{len(quads)} brick faces found; {len(found) // 4} matched to the model "
-                 f"(magenta), {len(quads) - len(found) // 4} not (grey)")
-    figstyle.placeholder(fig, "rendered view — replace with a photograph of the built target")
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    faces = len(matched) // 4
+    ax.set_title(f"{len(quads)} brick faces found; {faces} matched to the model "
+                 f"(magenta), {len(quads) - faces} not (grey)")
+    fig.tight_layout()
     return fig, "target-detection-on-one-view"
 
 
 def focal_ratio_vs_views():
-    rng = np.random.default_rng(3)
-    object_points, image_points = [], []
-    for azimuth in np.linspace(0.0, 2 * np.pi, 14, endpoint=False):
-        radius, elevation = rng.uniform(330, 520), rng.uniform(-0.2, 0.5)
-        eye = (radius * np.cos(azimuth) * np.cos(elevation),
-               radius * np.sin(azimuth) * np.cos(elevation),
-               43.2 + radius * np.sin(elevation))
-        rotation, translation = look_at(eye)
-        view = render(SMALL, rotation, translation, size=SIZE)
-        found = match(detect_quads(view.image, min_area_px=60.0), SMALL, min_faces=4)
-        if len(found) >= 24:
-            object_points.append(found.object_points.astype(np.float32))
-            image_points.append(found.image_points.astype(np.float32))
+    """Which intrinsic a brick target constrains, as views are added.
 
-    truth = SMALL[0, 0] / SMALL[1, 1]
-    flags = (cv2.CALIB_USE_INTRINSIC_GUESS | cv2.CALIB_ZERO_TANGENT_DIST
-             | cv2.CALIB_FIX_K1 | cv2.CALIB_FIX_K2 | cv2.CALIB_FIX_K3)
-    counts, ratios, focals = [], [], []
-    for n in range(4, len(object_points) + 1, 2):
-        guess = np.array([[SMALL[0, 0] * 1.1, 0, SIZE[0] / 2],
-                          [0, SMALL[0, 0] * 1.1, SIZE[1] / 2], [0, 0, 1.0]])
-        _, fitted, _, _, _ = cv2.calibrateCamera(
-            object_points[:n], image_points[:n], SIZE, guess, None, flags=flags)
-        counts.append(n)
-        ratios.append(100 * ((fitted[0, 0] / fitted[1, 1]) / truth - 1))
-        focals.append(100 * (fitted[0, 0] / SMALL[0, 0] - 1))
+    Not a claim that it settles `fx/fy`. It does not, on this capture: every
+    frame was shot upright, roll spanning 14.9 degrees, so the tower's vertical
+    axis maps to image y in all of them and the anisotropy direction is barely
+    observed. Scaling the model's own z axis by +/-1.5 % moves the fitted ratio
+    from 0.991 to 1.011 while the reprojection error moves only 5.066 to 5.087
+    px -- the images have almost no leverage on that direction, so the estimate
+    inherits whatever anisotropy the object model or the detector carries.
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.2))
-    ax.axhline(0.0, color="#8a8a85", lw=0.8)
-    ax.plot(counts, focals, "o-", color=figstyle.SERIES[0], label="fx")
-    ax.plot(counts, ratios, "s--", color=figstyle.SERIES[1], label="fx/fy ratio")
-    ax.set_xlabel("views used")
-    ax.set_ylabel("error (%)")
-    ax.legend(fontsize=7.4, frameon=False, loc="lower right")
-    # Fixed, and wide enough to read as "flat". Autoscaled, a spread of a
-    # tenth of a percent fills the panel and looks like a trend.
-    ax.set_ylim(-0.15, 0.15)
-    ax.set_title(f"Recovering a {100 * (truth - 1):.2f} % anisotropy from unrolled views")
-    figstyle.placeholder(fig, "rendered views — replace with photographs of the built target")
-    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    What the figure does show is that the ratio is the better-determined of the
+    two: across random subsets the absolute focal length scatters several times
+    more widely. Both are drawn against the board's value, so the offset is
+    visible beside the scatter rather than hidden by centring.
+    """
+    lego = _lego()
+    obj, img = lego["obj"], lego["img"]
+    board_K, board_d = lego["board_K"], lego["board_d"]
+    rng = np.random.default_rng(0)
+
+    full = _lego_calibrate(obj, img, board_K, board_d)
+    board_ratio = board_K[0, 0] / board_K[1, 1]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.2))
+    for n in (6, 8, 10, 12, 16, len(obj)):
+        for _ in range(12):
+            take = rng.choice(len(obj), size=min(n, len(obj)), replace=False)
+            K = _lego_calibrate([obj[k] for k in take], [img[k] for k in take], board_K, board_d)
+            axes[0].plot(n, 100 * (K[0, 0] / board_K[0, 0] - 1), "o",
+                         color=figstyle.SERIES[0], alpha=0.45, ms=4)
+            axes[1].plot(n, 100 * ((K[0, 0] / K[1, 1]) / board_ratio - 1), "o",
+                         color=figstyle.SERIES[0], alpha=0.45, ms=4)
+
+    for ax, title in ((axes[0], "absolute scale"), (axes[1], "anisotropy")):
+        ax.axhline(0.0, color=figstyle.SERIES[1], ls="--", lw=1.4, label="checkerboard")
+        ax.set_xlabel("views used")
+        ax.set_title(title, fontsize=9)
+        # Shared, and that is the whole point: on one scale the ratio's scatter
+        # is visibly a fraction of the focal length's. Given separate limits
+        # each panel fills its own axes and the comparison disappears.
+        ax.set_ylim(-9.0, 9.0)
+        ax.legend(fontsize=7.2, frameon=False, loc="lower right")
+    axes[0].set_ylabel("difference from the checkerboard (%)")
+    fig.suptitle("A brick target pins the ratio better than the scale")
+    fig.text(0.5, 0.005,
+             f"12 random subsets at each size, 21 views in all. At the full set the focal length sits "
+             f"{100*(full[0,0]/board_K[0,0]-1):+.2f} % from the\ncheckerboard and the ratio "
+             f"{100*((full[0,0]/full[1,1])/board_ratio-1):+.2f} %, but the ratio is the far tighter of the two "
+             f"across subsets.",
+             ha="center", va="bottom", fontsize=7.2, color="#52514e")
+    fig.tight_layout(rect=(0, 0.13, 1, 1))
     return fig, "target-focal-ratio-vs-view-count"
 
 
 def target_lego_vs_checkerboard():
     """Section 5: is a tower of bricks as good a reference as a printed board?
 
-    One question, one axis. Both calibrations are taken **in air** and both are
-    corrected the same way, so the only thing varying is the target the camera
-    was calibrated on. That is what section 5 has to establish -- the brick
-    target being an adequate reference -- and it is not the same claim as the
-    port correction being sound, which is section 4's.
+    One question, one axis. Both calibrations are taken in air, both run through
+    the same correction and the same distortion, and both measure the same
+    calipered 312.5 mm decoy on the same pool frames, so the calibration
+    reference is the only thing differing.
 
-    Holds the slot for the measurement. The range spread is the pool session's
-    and the reference is the decoy's calipered 312.5 mm; the plotted values come
-    from a fixed seed and are not measurements.
-
-    `figstyle.PIPELINE_STYLE` does not apply here, and this time that is not a
-    dodge: neither series is a pipeline. They are two targets feeding the same
-    pipeline. But they still take slots the pipelines do not own -- 5 and 6, the
-    first two `SERIES` entries `PIPELINE_STYLE` leaves free -- because a reader
-    turning from section 6 to this figure has been taught that aqua means Pinax,
-    and a target is not a correction.
+    This is a different claim from recovering the same intrinsics, and a more
+    useful one. The two calibrations disagree by 0.4 % on focal length, 0.9 % on
+    the ratio and over a hundred pixels on the principal point; what is reported
+    here is what that disagreement is worth once it has passed through a
+    per-dive beam fit and arrived at a length.
     """
-    rng = np.random.default_rng(11)
-    ranges = np.linspace(1.08, 4.48, 13)
+    import csv
 
-    # (label, slot, dash, marker, bias %, per-frame scatter %)
-    targets = (
-        ("LEGO target, in air", 5, "-", "o", -0.4, 0.7),
-        ("Checkerboard, in air", 6, "--", "s", 0.5, 0.9),
-    )
+    lego = _lego()
+    board_K, board_d = lego["board_K"], lego["board_d"]
+    brick_K = _lego_calibrate(lego["obj"], lego["img"], board_K, board_d)
+    pool = _pool()
+    objp, boards, board_spots, frames = pool["objp"], pool["boards"], pool["spots"], pool["frames"]
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.4))
-    ax.axhline(0.0, color="#8a8a85", lw=0.8, zorder=1)
-    for label, slot, dash, marker, bias, scatter in targets:
-        ax.plot(ranges, bias + rng.normal(0.0, scatter, ranges.size),
-                marker=marker, linestyle=dash, markersize=4,
-                color=figstyle.SERIES[slot], label=label, zorder=3)
+    def model(K):
+        def correct(px):
+            xy = cv2.undistortPoints(np.asarray(px, float).reshape(-1, 1, 2),
+                                     K, board_d.ravel()).reshape(-1, 2)
+            r = np.hypot(xy[:, 0], xy[:, 1])
+            _, gamma = exit_ray(np.arctan(r), FlatPort(0.001, 0.006, 1.49, SWEET_WATER))
+            return xy * np.where(r > 1e-9, np.tan(gamma) / np.where(r > 1e-9, r, 1.0), 1.0)[:, None]
+        return correct
 
-    ax.set_xlabel("range (m)")
+    def beam(correct):
+        points = []
+        for n in frames:
+            u = correct(boards[n])
+            _, rvec, tvec = cv2.solvePnP(objp, u.reshape(-1, 1, 2), np.eye(3), None)
+            normal = cv2.Rodrigues(rvec)[0][:, 2]
+            d = correct(board_spots[n][:2])[0]
+            ray = np.array([d[0], d[1], 1.0]); ray /= np.linalg.norm(ray)
+            points.append((normal @ np.asarray(tvec).ravel()) / (normal @ ray) * ray)
+        points = np.array(points)
+        origin, axis = fit_line(points)
+        off = points - origin
+        residual = np.linalg.norm(off - (off @ axis)[:, None] * axis, axis=1)
+        return fit_line(points[residual <= 3 * np.median(residual)])
+
+    spots = load_corner_cache(DATA / "laser_dots_decoy_raw.npz")
+    with open(DATA / "decoy_sam3.csv") as handle:
+        masks = {r["frame"]: r for r in csv.DictReader(handle)}
+    true_length, true_aspect = 0.3125, 312.5 / 106.1
+    kept = [n for n in sorted(set(spots) & set(masks))
+            if abs((float(masks[n]["length_px"]) / float(masks[n]["height_px"]))
+                   / true_aspect - 1) <= 0.25]
+
+    series = {}
+    for label, K in (("checkerboard", board_K), ("brick target", brick_K)):
+        correct = model(K)
+        origin, axis = beam(correct)
+        ranges, errors = [], []
+        for n in kept:
+            d = correct(spots[n][:2])[0]
+            z = range_along_beam(d, origin, axis)
+            ends = [correct(np.array([[float(masks[n][f"end{i}_x"]),
+                                       float(masks[n][f"end{i}_y"])]]))[0] for i in (0, 1)]
+            sep = np.linalg.norm(np.append(ends[0], 1.0) - np.append(ends[1], 1.0))
+            ranges.append(z); errors.append(100 * (sep * z / true_length - 1))
+        series[label] = (np.array(ranges), np.array(errors))
+
+    fig, ax = plt.subplots(figsize=(6.2, 3.4))
+    ax.axhline(0.0, color="#4a4a47", lw=1.0, zorder=1)
+    # Both plotted at one x per frame, so a frame reads as a vertical pair.
+    # Each calibration derives its own range, and drawing each at its own value
+    # separates the two points of a pair by more than the difference the figure
+    # exists to show.
+    shared = 0.5 * (series["checkerboard"][0] + series["brick target"][0])
+    for (label, (_, e)), colour, marker in zip(series.items(),
+                                               (figstyle.SERIES[1], figstyle.SERIES[0]),
+                                               ("s", "o")):
+        ax.plot(shared, e, marker, color=colour, ms=6, alpha=0.85,
+                label=f"{label}: median {np.median(e):+.2f} %")
+    gap = series["brick target"][1] - series["checkerboard"][1]
+    ax.set_xlabel("range to the decoy (m)")
     ax.set_ylabel("length error (%)")
-    ax.set_ylim(-6.0, 6.0)
-    ax.legend(fontsize=7.4, frameon=False, loc="upper right")
-    ax.set_title("Does the in-air target change the answer?")
-    figstyle.placeholder(
-        fig, "illustrative values \u2014 replace with the pool fish measured against "
-             "each in-air target")
-    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    ax.legend(fontsize=7.4, frameon=False)
+    ax.set_title("Same decoy, same correction, two in-air calibration targets")
+    fig.text(0.5, 0.005,
+             f"{len(kept)} frames of the calipered 312.5 mm decoy. The two calibrations differ by "
+             f"0.4 % in focal length\nand 0.9 % in fx/fy; the length they deliver differs by "
+             f"{np.median(np.abs(gap)):.2f} pp at the median and {np.abs(gap).max():.2f} pp at worst.",
+             ha="center", va="bottom", fontsize=7.2, color="#52514e")
+    fig.tight_layout(rect=(0, 0.13, 1, 1))
     return fig, "target-pool-length-lego-vs-checkerboard"
 
 
@@ -771,9 +902,9 @@ def pool_decoy_length():
 def main():
     figstyle.apply()
     finished = [error_budget, field_angle_collapse, build_quality, range_versus_length,
-                pool_range_by_model,
-                pool_end_to_end, pool_decoy_length]
-    provisional = [detection_example, focal_ratio_vs_views, target_lego_vs_checkerboard]
+                pool_range_by_model, pool_end_to_end, pool_decoy_length,
+                detection_example, focal_ratio_vs_views, target_lego_vs_checkerboard]
+    provisional = []
     for builder in finished + provisional:
         fig, name = builder()
         paths = figstyle.save(fig, name)
