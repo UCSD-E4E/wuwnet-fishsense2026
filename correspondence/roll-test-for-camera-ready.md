@@ -24,44 +24,52 @@ anisotropy inverts under a 90° roll, the sensor's does not. Decomposition needs
 the **same target at both rolls**; a joint calibration over both rolls estimates
 the sensor directly (and averages the target term out).
 
-## Result: the sensor is near-isotropic; the ~1 % is largely the target
+## Result: the sensor is near-isotropic; the ~1 % is the target
 
-| estimate | fx/fy | reading |
-|---|---|---|
-| LEGO joint, both rolls (same session, same tower) | **0.9977** | sensor −0.23 % |
-| LEGO joint, balanced 13+13, 40 draws | 0.9977, IQR [0.9971, 0.9981] | robust |
-| LEGO horizontal alone | 0.9978 | |
-| LEGO vertical alone | 0.9863 | weakly conditioned (13 views) |
-| Checkerboard vertical (isotropic pitch, rms 0.67) | 1.0081 | single roll |
-| Old garage checkerboard (isotropic pitch, rms 0.39) | 0.9939 | single roll, 2024 |
+Two independent targets, both decomposed across a 90° roll, agree the sensor is
+near-isotropic. A recovered ratio factors as `sensor x target^(+/-1)`; the target
+term inverts under roll, so `sqrt(up x rolled)` is the sensor and `sqrt(up/rolled)`
+the target.
 
-The **LEGO joint fx/fy is 0.998 (−0.2 %) and robust** to balancing the two roll
-groups. That is the same-session, same-target answer, and it is near-isotropic.
-Its implied target anisotropy is ~+0.6 %; the checkerboard's own is ~+0.7 %
-(sqrt(1.0081/0.9939)). Both targets carry roughly the anisotropy that shows up as
-"the camera's" ~1 % in any single calibration.
+**Checkerboard (well-conditioned; the strong evidence).** Same physical board and
+same camera -- confirmed empirically: the raw radial term matches, k1 = -0.1497
+(garage 2024, upright) vs -0.1479 (this session, rolled 90°). Roll is a clean
+contrast: garage clusters at 0/180°, the recent set at 89°. Isotropic pitch,
+outlier-rejected, rms 0.39 and 0.67:
 
-**Convergent, not airtight.** Three things keep this short of proof:
+| roll | fx/fy |
+|---|---|
+| garage, upright | 0.99387 |
+| recent, rolled 90° | 1.00807 |
 
-1. The LEGO fx/fy is weakly conditioned -- rms 5-6 px, and the 90° roll did *not*
-   pull the joint fit (the 3D tower already conditions fx/fy within one roll, so
-   the rolled views added little). The estimate is 0.998 but its own spread
-   allows up to ~−0.8 % (the naive sqrt(h·v) gives 0.992).
-2. The two checkerboards cannot be decomposed against each other: different
-   physical board *and* different session, so `sqrt(H·V)` across them is not a
-   clean sensor estimate. They are only consistent-with, not evidence-for.
-3. No same-session, same-board, both-roll, low-rms pair exists in this data --
-   which is the one clean measurement.
+  sensor = sqrt(0.99387 x 1.00807) = **1.00094 (+0.09 %, near-isotropic)**
+  board  = sqrt(0.99387 / 1.00807) = **0.99293 (-0.71 %, the print's own anisotropy)**
 
-## To close it (one shoot)
+**LEGO (same session, corroborating).** The same-session tower, calibrated
+jointly over both rolls, gives fx/fy **0.998 (-0.2 %)**, robust to balancing the
+13+13 roll groups -- near-isotropic, independent of the checkerboard. Its fx/fy is
+weakly conditioned (rms 5-6 px, the 3D tower conditions fx/fy within one roll so
+the rolled views barely pulled the joint fit), so it is corroboration, not the
+lead.
 
-Photograph the **checkerboard at both rolls in one session** -- 15 upright, 15
-rolled 90°, same board, locked focus. That is the well-conditioned (rms <1),
-same-target, both-roll pair the LEGO can't quite be. `sqrt(H·V)` is then the
-sensor and `sqrt(H/V)` the board; if the sensor lands near 1.000 as the LEGO
-joint says, section 8's ~1 % is target-side and the section should be revised
-from "camera-side" to "target-side, sensor near-isotropic."
+**So the ~1 % that reads as "the camera's" in any single calibration is the
+target's**: the checkerboard print is ~0.7 % anisotropic, the LEGO object model
+~0.6 %, and the sensor sits within ~0.2 % of square.
 
-**Bottom line for section 8 as written:** the "~1 % is camera-side" lean is not
-supported and is mildly contradicted. Soften it to open, citing the LEGO joint
-near-isotropic result, until the clean checkerboard pair confirms.
+**Remaining caveat.** The checkerboard pair is cross-session (2024 vs 2026),
+though same board and same camera -- k1 matching to 0.002 says the lens/focus
+barely moved, and fx/fy is stable to focus, so this is minor. The one thing not
+yet in hand is a single-session same-board both-roll set; it would remove the
+cross-session caveat entirely, but the case no longer rests on it.
+
+## Consequence for section 8
+
+Section 8 leans "~1 % camera-side" (corner-to-corner caliper reading). **That is
+now contradicted by a direct optical measurement.** Revise it: the sensor is
+near-isotropic (fx/fy within ~0.2 %), and the ~1 % anisotropy is target-side --
+the board's own print anisotropy, measured here at ~0.7 % by rolling the camera
+rather than by rulering the board. The caliper never could resolve it (1 mm on
+the 9-pitch short axis is 0.26 %); the roll test does.
+
+Reproduce: detections cached in `scratchpad/roll_cache.npz`; garage corners in
+`data/board_corners_raw.npz`; analysis `scratchpad/roll2b.py`.
