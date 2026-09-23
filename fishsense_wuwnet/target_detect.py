@@ -111,6 +111,7 @@ def detect_quads(
     fill_floor: float = 0.85,
     open_px: int = 3,
     chroma_blur: float = 0.0,
+    subpixel: bool = True,
 ) -> List[Quad]:
     """Find brick faces as four-sided blobs of one colour.
 
@@ -158,18 +159,90 @@ def detect_quads(
             area = float(blob.sum())
             if area < min_area_px:
                 continue
-            contours, _ = cv2.findContours(blob, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # CHAIN_APPROX_NONE keeps every boundary pixel. SIMPLE compresses a
+            # straight edge to its two endpoints, which leaves the subpixel edge
+            # fit below with nothing to fit -- that is what made an earlier
+            # refinement a no-op. approxPolyDP still reduces it to a polygon.
+            contours, _ = cv2.findContours(blob, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             contour = max(contours, key=cv2.contourArea)
             perimeter = cv2.arcLength(contour, True)
             approximation = cv2.approxPolyDP(contour, approx_tolerance * perimeter, True)
             polygon = approximation.reshape(-1, 2).astype(np.float64)
-            for candidate in _split_polygon(polygon):
+            pieces = _split_polygon(polygon)
+            boundary = contour.reshape(-1, 2).astype(np.float64)
+            for candidate in pieces:
                 if abs(cv2.contourArea(candidate.astype(np.float32))) < min_area_px:
                     continue
                 if _fill(blob, candidate) < fill_floor:
                     continue
-                quads.append(Quad(int(colour), _order_corners(candidate)))
+                corners = _order_corners(candidate)
+                # Subpixel refinement only for un-split quads. A chevron's cut
+                # edge is internal -- no blob boundary runs along it -- so its
+                # two cut corners have nothing to fit, and refining them pulls
+                # toward whatever lies nearby. Interior bricks (the vast
+                # majority, and what carries the calibration) are all un-split.
+                if subpixel and len(pieces) == 1:
+                    corners = _refine_corners(boundary, corners)
+                quads.append(Quad(int(colour), corners))
     return quads
+
+
+def _refine_corners(boundary: np.ndarray, quad: np.ndarray, trim: float = 0.2,
+                    band: float = 3.0) -> np.ndarray:
+    """Corners from intersecting lines fit to each edge's boundary pixels, not one vertex.
+
+    `approxPolyDP` returns a single contour point per corner, integer-quantised,
+    which measures 5.5 px on this camera -- the per-wall homography residual
+    equals the full-calibration residual, so the corner *is* the error, not the
+    object model. Fitting each of the four edges to the tens of boundary pixels
+    along it and intersecting adjacent fits determines the corner from the whole
+    edge, which is what a checkerboard's `cornerSubPix` does and why it reaches
+    sub-pixel.
+
+    `trim` drops the fraction of each edge nearest its ends, where the brick's
+    moulded corner is rounded and the boundary curves off the line. A corner is
+    moved only if both its edges have support and the move is within a quarter of
+    the shorter edge -- otherwise the `approxPolyDP` vertex stands, so a bad fit
+    degrades rather than corrupts.
+    """
+    refined = quad.astype(float).copy()
+    lines = []
+    for k in range(4):
+        a, b = quad[k], quad[(k + 1) % 4]
+        edge = b - a
+        length = float(np.linalg.norm(edge))
+        if length < 12.0:
+            lines.append(None)
+            continue
+        tangent = edge / length
+        normal = np.array([-tangent[1], tangent[0]])
+        rel = boundary - a
+        along = rel @ tangent
+        perp = rel @ normal
+        on_edge = (along > trim * length) & (along < (1.0 - trim) * length) & (np.abs(perp) < band)
+        if on_edge.sum() < 8:
+            lines.append(None)
+            continue
+        pts = boundary[on_edge]
+        centre = pts.mean(axis=0)
+        _, _, vt = np.linalg.svd(pts - centre)  # total least squares
+        lines.append((centre, vt[0]))
+    for k in range(4):
+        first, second = lines[(k - 1) % 4], lines[k]
+        if first is None or second is None:
+            continue
+        (p1, d1), (p2, d2) = first, second
+        denom = d1[0] * d2[1] - d1[1] * d2[0]
+        if abs(denom) < 1e-6:
+            continue
+        gap = p2 - p1
+        s = (gap[0] * d2[1] - gap[1] * d2[0]) / denom
+        candidate = p1 + s * d1
+        cap = 0.25 * min(np.linalg.norm(quad[k] - quad[(k - 1) % 4]),
+                         np.linalg.norm(quad[k] - quad[(k + 1) % 4]))
+        if np.linalg.norm(candidate - quad[k]) <= max(cap, 3.0):
+            refined[k] = candidate
+    return refined
 
 
 def _fill(blob: np.ndarray, quad: np.ndarray) -> float:
