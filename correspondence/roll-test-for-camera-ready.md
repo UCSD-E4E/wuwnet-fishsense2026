@@ -73,3 +73,40 @@ the 9-pitch short axis is 0.26 %); the roll test does.
 
 Reproduce: detections cached in `scratchpad/roll_cache.npz`; garage corners in
 `data/board_corners_raw.npz`; analysis `scratchpad/roll2b.py`.
+
+---
+
+## Fixing the LEGO calibration to precise standalone (2026-09-22)
+
+The LEGO calibration sits at ~5 px rms where the checkerboard is 0.5. Diagnosed
+the cause by decomposing the residual, and corrected a wrong first guess.
+
+**Not corner quantisation.** Added subpixel corner refinement (edge-fit and
+intersect; `detect_quads(subpixel=True)`). It works now -- an earlier version was
+a silent no-op because `findContours(CHAIN_APPROX_SIMPLE)` gave the edge fit only
+two points per edge -- but it moves the per-wall residual only 5.03 -> 4.93 px.
+If detection were the bottleneck it would have dropped hard. It did not.
+
+**Two comparable causes, measured** (each brick corner tracked to object
+coordinates across all views):
+
+| cause | size | fix |
+|---|---|---|
+| per-view detection scatter | 0.86 mm / 6.2 px | lower ISO -- the mask boundaries jitter at ISO 1600 |
+| systematic per-brick slop | 0.58 mm / 4.2 px | bundle-adjust the object points, or build more precisely |
+
+So two levers, neither of which is a better corner detector:
+
+1. **Reshoot at ISO 100-200.** The ISO-1600 chroma noise shatters the colour
+   masks (needed `chroma_blur` just to detect) and jitters the boundaries the
+   corners are fit to. This is the larger term and the cheapest fix.
+2. **Bundle-adjust the tower's object points.** ~0.58 mm systematic per-brick
+   placement error from hand assembly; let the object points float within a tight
+   prior in a joint solve (OpenCV `calibrateCameraRO`, or a custom BA), which
+   absorbs the slop into a refined per-tower model. The tower need not be rebuilt.
+
+Note for scope: none of this is needed for the paper's claim that LEGO is an
+*adequate* reference -- the end-to-end delivered length already matches the
+checkerboard to 0.04 pp, because the per-dive beam fit cancels focal scale. These
+two fixes are what make the LEGO a *precise standalone* calibration (~5 -> ~1-2
+px), for whoever wants that later.
