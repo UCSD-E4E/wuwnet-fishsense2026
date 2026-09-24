@@ -62,11 +62,16 @@ def test_no_joint_has_the_same_colour_on_both_sides():
     """
     up = np.array([0.0, 0.0, 1.0])
     walls = defaultdict(list)
+    # Keyed by depth as well as direction. On a box the only faces sharing a
+    # direction are one wall's; on any other shape -- a corner's inner face and
+    # the far end of the other arm -- faces 48 mm apart in depth would otherwise
+    # be compared as if they lay side by side.
     for face in exposed_faces(sides_only=True):
-        walls[tuple(np.round(face.normal, 6))].append(face)
+        depth = round(float(face.centre @ face.normal), 2)
+        walls[(tuple(np.round(face.normal, 6)), depth)].append(face)
 
     shared = 0
-    for normal, wall in walls.items():
+    for (normal, _), wall in walls.items():
         along = np.cross(up, np.array(normal))
         boxes = [(f.corners @ along, f.corners @ up, f) for f in wall]
         for index, (a0, z0, first) in enumerate(boxes):

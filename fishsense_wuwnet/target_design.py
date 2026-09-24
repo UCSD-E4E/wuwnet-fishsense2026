@@ -184,3 +184,38 @@ def to_ldr(placements, name: str = "corner_target") -> str:
             x, z, rot = 20, centre, "0 0 -1 0 1 0 1 0 0"
         lines.append(f"1 {colour} {x:.1f} {top} {z:.1f} {rot} {part}")
     return "\n".join(lines) + "\n"
+
+
+def compare(built, design) -> dict:
+    """Differences between a model as built (a Studio export) and the design it follows.
+
+    Studio places a model wherever it was assembled and at any heading, so the two
+    are aligned first: each quarter turn about the vertical is tried, with the
+    lowest corner of the bricks moved to the origin, and the turn that lines up
+    most bricks is kept. Bricks are then keyed by part, position and the axis
+    their long side runs along, which is invariant to the 180-degree flips Studio
+    makes freely on a symmetric brick. What is left over is reported.
+    """
+    from .calibration_model import brick_corners, load_bricks
+
+    def keyed(bricks, turns):
+        c, s = np.round(np.cos(turns * np.pi / 2)), np.round(np.sin(turns * np.pi / 2))
+        rot = np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+        low = np.min([brick_corners(b) @ rot.T for b in bricks], axis=(0, 1))
+        out = {}
+        for b in bricks:
+            centre = rot @ b.centre - low
+            axis = tuple(np.abs(np.round(rot @ b.rotation[:, 0], 3)))
+            out[(b.part, tuple(np.round(centre, 1)), axis)] = b.colour
+        return out
+
+    want = keyed(load_bricks(design), 0)
+    built_bricks = load_bricks(built)
+    got = max((keyed(built_bricks, k) for k in range(4)), key=lambda g: len(set(g) & set(want)))
+    shared = set(got) & set(want)
+    return {
+        "matched": len(shared),
+        "recoloured": sorted((k[0], k[1], want[k], got[k]) for k in shared if want[k] != got[k]),
+        "missing": sorted((k[0], k[1], want[k]) for k in set(want) - set(got)),
+        "extra": sorted((k[0], k[1], got[k]) for k in set(got) - set(want)),
+    }
