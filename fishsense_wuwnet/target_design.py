@@ -23,7 +23,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from .calibration_model import COLOUR_CLASS, colour_class
+from .calibration_model import COLOUR_CLASS, UNVERIFIED_COLOURS, colour_class
 from .target_rules import check, load_inventory
 
 #: Two-wide bricks by length in studs.
@@ -144,6 +144,11 @@ def _lay_course(k, arm, seams, prev_course, stock, rng):
                    and colour_class(c) not in banned]
         if not choices:
             return None
+        # A colour that has been photographed beats one that is only predicted to
+        # read: medium azure is predicted at saturation 127 against a floor of 125,
+        # and the first design drew it three times purely by chance.
+        measured = [(p, c) for p, c in choices if c not in UNVERIFIED_COLOURS]
+        choices = measured or choices
         # Prefer the group with most stock left, so no colour runs out early.
         left = Counter()
         for (p, c), m in stock.items():
