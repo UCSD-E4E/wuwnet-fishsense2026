@@ -26,6 +26,7 @@ from .calibration_model import (
     BRICK_CLEARANCE_MM,
     CHAMFER_MM,
     MODEL_IO,
+    STUD_MM,
     LatticePoint,
     exposed_faces,
     lattice_points,
@@ -45,6 +46,26 @@ LDRAW_BGR = {
     7: (157, 161, 155),  # light gray
     8: (92, 110, 109),  # dark gray
 }
+
+
+def _box_colours():
+    """Every colour in the LEGO Classic 10698, so any design built from it renders.
+
+    Rebrickable's RGB, from the committed inventory; its colour ids are LDraw's.
+    Entries above take precedence, so existing renders do not change.
+    """
+    import csv
+
+    path = Path(__file__).resolve().parent.parent / "data" / "box_10698_inventory.csv"
+    if not path.exists():
+        return
+    with open(path) as f:
+        for row in csv.DictReader(line for line in f if not line.startswith("#")):
+            rgb = row["rgb"]
+            LDRAW_BGR.setdefault(int(row["color_id"]), (int(rgb[4:6], 16), int(rgb[2:4], 16), int(rgb[0:2], 16)))
+
+
+_box_colours()
 
 #: The dark line where two bricks meet, reproduced by insetting each face over a
 #: dark background rather than by drawing lines on top of it -- which is what
@@ -174,9 +195,13 @@ def render(
         cv2.fillConvexPoly(image, np.round(outer).astype(np.int32), SEAM_BGR, cv2.LINE_AA)
         cv2.fillConvexPoly(image, np.round(inner).astype(np.int32), colour, cv2.LINE_AA)
         if studs and float(face.normal[2]) > 0.5:
-            for su in (-1.5, -0.5, 0.5, 1.5):
-                for sv in (-0.5, 0.5):
-                    ring = face.centre + su * du / 2.0 + sv * dv
+            # One stud per stud-square of the top, whatever the part's footprint.
+            uu, vv = du / np.linalg.norm(du), dv / np.linalg.norm(dv)
+            nu = max(1, int(round(2.0 * np.linalg.norm(du) / STUD_MM)))
+            nv = max(1, int(round(2.0 * np.linalg.norm(dv) / STUD_MM)))
+            for su in np.arange(nu) - (nu - 1) / 2.0:
+                for sv in np.arange(nv) - (nv - 1) / 2.0:
+                    ring = face.centre + su * STUD_MM * uu + sv * STUD_MM * vv
                     edge = ring + STUD_RADIUS_MM * du / np.linalg.norm(du)
                     (c0, e0), _ = project(np.stack([ring, edge])), None
                     radius = int(round(np.linalg.norm(c0[1] - c0[0])))

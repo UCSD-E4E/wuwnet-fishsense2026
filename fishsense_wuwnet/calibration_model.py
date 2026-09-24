@@ -54,9 +54,13 @@ BRICK_MM = 9.6
 BRICK_CLEARANCE_MM = 0.2
 CHAMFER_MM = 0.25
 
-#: The design, as committed. Studio writes several `.ldr` variants into the zip;
+#: The target that was built and photographed on 2026-09-21 -- the build every
+#: raw frame, cached detection and figure in this repo is of. Pinned under its own
+#: name so that editing a design in Studio (which saves over
+#: `calibration_model.io`) cannot silently change what the photographs are
+#: matched against. Studio writes several `.ldr` variants into the zip;
 #: `model.ldr` is the one it treats as current.
-MODEL_IO = Path(__file__).resolve().parent.parent / "calibration_model" / "calibration_model.io"
+MODEL_IO = Path(__file__).resolve().parent.parent / "calibration_model" / "as_built_2026-09-20.io"
 MODEL_ENTRY = "model.ldr"
 
 #: LDraw colour codes actually used by the target. The four saturated colours are
@@ -75,8 +79,57 @@ COLOURS = {
 }
 MARKER_COLOURS = (1, 4, 2, 14)
 
+#: What the colour classifier can tell apart, and which model colours fall in
+#: each group. Keyed by model colour, valued by the classifier's label for it.
+#:
+#: Measured on 623 labelled faces of the photographed build (11 raw frames, ISO
+#: 1600): blue, red, green and yellow are read correctly on 88-94 % of faces and
+#: never as one another, and white on 93 %. Black is not seen at all (98 %), dark
+#: gray mostly not (75 %), and light gray is read as white (67 %), so there is
+#: room for exactly one neutral. The closest pair of hues that never confused was
+#: red and yellow, 23 HSV units apart; that is the separation a group has to keep.
+#:
+#: 226, 321 and 322 are *predicted* members -- same hue as their group to within
+#: 4-13 units, saturation above the floor on a mapping fitted to the eight
+#: photographed colours -- and have not been photographed. Treat them as such
+#: until a swatch shot confirms them.
+COLOUR_CLASS = {
+    4: 4,  # red
+    14: 14, 226: 14,  # yellow, bright light yellow
+    2: 2,  # green
+    1: 1, 321: 1, 322: 1,  # blue, dark azure, medium azure
+    15: 15,  # white
+}
+UNVERIFIED_COLOURS = (226, 321, 322)
+
+
+def colour_class(colour: int) -> int:
+    """The classifier label a model colour reads as; the colour itself if unknown."""
+    return COLOUR_CLASS.get(colour, colour)
+
 #: Footprint of part 3001 (the 2x4 brick) in studs, and its body height.
 BRICK_3001_STUDS = (4, 2)
+PLATE_MM = 3.2
+
+#: Every part the target may use: footprint in studs along the part's own x and
+#: y, and body height. The set is what a LEGO Classic box carries in basic bricks,
+#: plus the baseplate. A part missing from here is an error at load time rather
+#: than a silently mis-sized brick.
+PARTS = {
+    "3005.dat": (1, 1, BRICK_MM),
+    "3004.dat": (2, 1, BRICK_MM),
+    "3622.dat": (3, 1, BRICK_MM),
+    "3010.dat": (4, 1, BRICK_MM),
+    "3009.dat": (6, 1, BRICK_MM),
+    "3008.dat": (8, 1, BRICK_MM),
+    "3003.dat": (2, 2, BRICK_MM),
+    "3002.dat": (3, 2, BRICK_MM),
+    "3001.dat": (4, 2, BRICK_MM),
+    "2456.dat": (6, 2, BRICK_MM),
+    "3007.dat": (8, 2, BRICK_MM),
+    "3006.dat": (10, 2, BRICK_MM),
+    "91405.dat": (16, 16, PLATE_MM),
+}
 
 
 @dataclass(frozen=True)
@@ -91,6 +144,17 @@ class Brick:
     @property
     def is_marker(self) -> bool:
         return self.colour in MARKER_COLOURS
+
+    @property
+    def half(self) -> np.ndarray:
+        """Half-extents of the body along the part's own axes, in millimetres."""
+        sx, sy, height = PARTS[self.part]
+        return np.array([sx * STUD_MM, sy * STUD_MM, height]) / 2.0
+
+    @property
+    def is_plate(self) -> bool:
+        """Plates carry no features: at 3.2 mm a face is too thin to detect."""
+        return PARTS[self.part][2] < BRICK_MM
 
 
 def _ldraw_lines(path: Path = MODEL_IO, entry: str = MODEL_ENTRY):
@@ -124,31 +188,36 @@ def load_bricks(path: Path = MODEL_IO) -> list:
         if len(fields) < 15 or fields[0] != "1":
             continue
         colour = int(fields[1])
-        pos = np.array(list(map(float, fields[2:5]))) * LDU_MM
-        rot = np.array(list(map(float, fields[5:14]))).reshape(3, 3)
-        bricks.append(
-            Brick(colour, to_model @ pos, to_model @ rot @ to_model.T, fields[14])
-        )
+        part = fields[14]
+        if part not in PARTS:
+            raise ValueError(f"part {part} is not in PARTS; add its footprint")
+        pos = to_model @ (np.array(list(map(float, fields[2:5]))) * LDU_MM)
+        rot = to_model @ np.array(list(map(float, fields[5:14]))).reshape(3, 3) @ to_model.T
+        # An LDraw part's origin is the centre of its *top* face and the body
+        # hangs below it. Taking the origin as the body centre was a constant
+        # half-brick shift while every part was a brick; with plates in the
+        # model it would put them at the wrong height relative to the bricks.
+        centre = pos + rot @ np.array([0.0, 0.0, -PARTS[part][2] / 2.0])
+        bricks.append(Brick(colour, centre, rot, part))
     if not bricks:
         raise ValueError(f"no LDraw part lines found in {path}:{MODEL_ENTRY}")
     return bricks
 
 
-def brick_corners(brick: Brick, studs: Tuple[int, int] = BRICK_3001_STUDS) -> np.ndarray:
+def brick_corners(brick: Brick) -> np.ndarray:
     """The eight corners of one brick's body, in model millimetres.
 
     Corners rather than studs because they are what a reconstruction actually
     recovers: a stud is a smooth cylinder and localises poorly, while the black
     and white brick edges are high-contrast and meet at a point.
     """
-    half = np.array([studs[0] * STUD_MM, studs[1] * STUD_MM, BRICK_MM]) / 2.0
     signs = np.array([[sx, sy, sz] for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)])
-    return brick.centre + (signs * half) @ brick.rotation.T
+    return brick.centre + (signs * brick.half) @ brick.rotation.T
 
 
 def model_points(path: Path = MODEL_IO, markers_only: bool = False) -> np.ndarray:
     """Every brick corner in the target, as an ``(N, 3)`` cloud in millimetres."""
-    bricks = [b for b in load_bricks(path) if not markers_only or b.is_marker]
+    bricks = [b for b in load_bricks(path) if not b.is_plate and (not markers_only or b.is_marker)]
     return np.vstack([brick_corners(b) for b in bricks])
 
 
@@ -224,8 +293,8 @@ class Face:
         return abs(float(self.normal[2])) < 0.5
 
 
-def _brick_frames(bricks, studs: Tuple[int, int] = BRICK_3001_STUDS):
-    half = np.array([studs[0] * STUD_MM, studs[1] * STUD_MM, BRICK_MM]) / 2.0
+def _brick_frames(bricks):
+    half = np.array([b.half for b in bricks])  # (N, 3), per part
     centres = np.array([b.centre for b in bricks])
     rotations = np.array([b.rotation for b in bricks])
     return half, centres, rotations
@@ -235,7 +304,7 @@ def _occupied(points, half, centres, rotations) -> np.ndarray:
     """Which of `points` lie inside any brick."""
     local = np.einsum("nji,mj->nmi", rotations, np.atleast_2d(points))
     local = local - np.einsum("nji,nj->ni", rotations, centres)[:, None, :]
-    return (np.abs(local) <= half + _EPS_MM).all(-1).any(0)
+    return (np.abs(local) <= half[:, None, :] + _EPS_MM).all(-1).any(0)
 
 
 def _escapes(origin, direction, half, centres, rotations) -> bool:
@@ -272,10 +341,12 @@ def exposed_faces(path: Path = MODEL_IO, sides_only: bool = False) -> list:
 
     faces = []
     for i, brick in enumerate(bricks):
+        if brick.is_plate:
+            continue  # occludes, but is never a feature
         for axis in range(3):
             for sign in (-1.0, 1.0):
                 normal = rotations[i][:, axis] * sign
-                centre = brick.centre + normal * half[axis]
+                centre = brick.centre + normal * half[i][axis]
                 # In-plane axes chosen so that (u, v, normal) is right-handed,
                 # which makes the corner order consistent for a renderer.
                 others = [k for k in range(3) if k != axis]
@@ -283,7 +354,7 @@ def exposed_faces(path: Path = MODEL_IO, sides_only: bool = False) -> list:
                 if np.dot(np.cross(u, v), normal) < 0:
                     u, v = v, u
                     others = others[::-1]
-                hu, hv = half[others[0]], half[others[1]]
+                hu, hv = half[i][others[0]], half[i][others[1]]
                 corners = centre + quadrant[:, 0:1] * u * hu + quadrant[:, 1:2] * v * hv
                 samples = np.vstack([centre[None], centre + (corners - centre) * 0.9])
                 if _occupied(samples + normal, half, centres, rotations).any():

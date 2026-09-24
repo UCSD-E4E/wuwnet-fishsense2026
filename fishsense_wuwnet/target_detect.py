@@ -28,6 +28,7 @@ from .calibration_model import (
     MARKER_COLOURS,
     MODEL_IO,
     Face,
+    colour_class,
     exposed_faces,
     visible_corners,
 )
@@ -398,13 +399,13 @@ def match(
             # anchor tends to be found in the first handful of tries and the
             # early exit below then skips the rest.
             order = sorted(
-                (q for q in detected if any(q.colour == f.colour for _, f in markers)),
+                (q for q in detected if any(q.colour == colour_class(f.colour) for _, f in markers)),
                 key=lambda q: -abs(cv2.contourArea(q.corners.astype(np.float32))),
             )
             enough = max(min_faces, int(round(0.6 * len(wall))))
             for quad in order:
                 for index, face in markers:
-                    if quad.colour != face.colour:
+                    if quad.colour != colour_class(face.colour):
                         continue
                     source = local[index].astype(np.float32)
                     for roll in range(4):
@@ -550,7 +551,7 @@ def _score(homography, wall, local, detected, centre_tolerance):
         # Vectorised because this runs for every face of every hypothesis, and
         # there are thousands of hypotheses per wall.
         near = np.flatnonzero(
-            (colours == face.colour)
+            (colours == colour_class(face.colour))
             & (np.linalg.norm(centres - centre, axis=1) <= centre_tolerance * scale)
         )
         for candidate in near:
@@ -590,7 +591,9 @@ def _seed_faces(
     seeding from one colour measured identically to four on the designed layout.
     """
     available = {q.colour for q in detected}
-    on_wall = Counter(f.colour for f in wall if f.colour in available)
+    # Compared as colour groups: the classifier reports a group (bright light
+    # yellow reads as yellow), and the model records the brick's actual colour.
+    on_wall = Counter(colour_class(f.colour) for f in wall if colour_class(f.colour) in available)
     if not on_wall:
         return []
     in_view = Counter(q.colour for q in detected)
@@ -601,4 +604,4 @@ def _seed_faces(
         seeds += on_wall[colour]
         if seeds >= min_seeds and len(chosen) >= colours:
             break
-    return [(i, f) for i, f in enumerate(wall) if f.colour in chosen]
+    return [(i, f) for i, f in enumerate(wall) if colour_class(f.colour) in chosen]

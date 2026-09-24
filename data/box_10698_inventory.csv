@@ -1,0 +1,230 @@
+# LEGO Classic 10698 Large Creative Brick Box, non-spare inventory (790 pieces).
+# Source: Rebrickable bulk catalogue (inventories/inventory_parts/colors/parts .csv.gz),
+# downloaded 2026-09-23. Catalogue versions 1 and 2 of the set are identical.
+# color_id is Rebrickable's, which equals the LDraw colour code for every colour here.
+part_num,part_name,color_id,colour_name,rgb,quantity
+11212,Plate 3 x 3,72,Dark Bluish Gray,6C6E68,2
+14769,Tile Round 2 x 2 with Bottom Stud Holder,72,Dark Bluish Gray,6C6E68,2
+15207,Panel 1 x 4 x 1 with Rounded Corners [Thin Wall],70,Reddish Brown,582A12,2
+15254,Brick Arch 1 x 6 x 2 - Thin Top without Reinforced Underside [New Version],71,Light Bluish Gray,A0A5A9,1
+15332,Fence Spindled 1 x 4 x 2 [4 Top Studs],15,White,FFFFFF,2
+15397,Plate 3 x 3 Cross,30,Medium Lavender,AC78BA,2
+2431,Tile 1 x 4 with Groove,2,Green,237841,2
+2431,Tile 1 x 4 with Groove,71,Light Bluish Gray,A0A5A9,2
+2456,Brick 2 x 6,0,Black,05131D,2
+2456,Brick 2 x 6,10,Bright Green,4B9F4A,2
+2456,Brick 2 x 6,320,Dark Red,720E0F,2
+2458,Brick Special 1 x 2 with Pin,72,Dark Bluish Gray,6C6E68,4
+2877,Brick Special 1 x 2 with Grille,15,White,FFFFFF,4
+2926,Plate Special 1 x 4 with Wheels Holder,0,Black,05131D,2
+3001,Brick 2 x 4,1,Blue,0055BF,6
+3001,Brick 2 x 4,2,Green,237841,4
+3001,Brick 2 x 4,4,Red,C91A09,8
+3001,Brick 2 x 4,14,Yellow,F2CD37,4
+3001,Brick 2 x 4,19,Tan,E4CD9E,2
+3001,Brick 2 x 4,25,Orange,FE8A18,2
+3001,Brick 2 x 4,27,Lime,BBE90B,6
+3001,Brick 2 x 4,28,Dark Tan,958A73,4
+3001,Brick 2 x 4,29,Bright Pink,E4ADC8,4
+3001,Brick 2 x 4,71,Light Bluish Gray,A0A5A9,4
+3001,Brick 2 x 4,72,Dark Bluish Gray,6C6E68,3
+3001,Brick 2 x 4,85,Dark Purple,3F3691,4
+3001,Brick 2 x 4,191,Bright Light Orange,F8BB3D,4
+3001,Brick 2 x 4,288,Dark Green,184632,4
+3001,Brick 2 x 4,321,Dark Azure,078BC9,4
+3001,Brick 2 x 4,322,Medium Azure,36AEBF,4
+3002,Brick 2 x 3,0,Black,05131D,8
+3002,Brick 2 x 3,1,Blue,0055BF,4
+3002,Brick 2 x 3,27,Lime,BBE90B,4
+3002,Brick 2 x 3,70,Reddish Brown,582A12,4
+3003,Brick 2 x 2,1,Blue,0055BF,4
+3003,Brick 2 x 2,2,Green,237841,4
+3003,Brick 2 x 2,4,Red,C91A09,4
+3003,Brick 2 x 2,5,Dark Pink,C870A0,4
+3003,Brick 2 x 2,14,Yellow,F2CD37,4
+3003,Brick 2 x 2,25,Orange,FE8A18,4
+3003,Brick 2 x 2,27,Lime,BBE90B,4
+3003,Brick 2 x 2,28,Dark Tan,958A73,4
+3003,Brick 2 x 2,29,Bright Pink,E4ADC8,8
+3003,Brick 2 x 2,84,Medium Nougat,AA7D55,8
+3003,Brick 2 x 2,85,Dark Purple,3F3691,4
+3003,Brick 2 x 2,320,Dark Red,720E0F,4
+3003,Brick 2 x 2,322,Medium Azure,36AEBF,4
+3004,Brick 1 x 2,0,Black,05131D,4
+3004,Brick 1 x 2,4,Red,C91A09,8
+3004,Brick 1 x 2,10,Bright Green,4B9F4A,4
+3004,Brick 1 x 2,15,White,FFFFFF,4
+3004,Brick 1 x 2,19,Tan,E4CD9E,4
+3004,Brick 1 x 2,25,Orange,FE8A18,12
+3004,Brick 1 x 2,27,Lime,BBE90B,4
+3004,Brick 1 x 2,29,Bright Pink,E4ADC8,8
+3004,Brick 1 x 2,71,Light Bluish Gray,A0A5A9,8
+3004,Brick 1 x 2,72,Dark Bluish Gray,6C6E68,4
+3004,Brick 1 x 2,84,Medium Nougat,AA7D55,8
+3004,Brick 1 x 2,158,Yellowish Green,DFEEA5,4
+3004,Brick 1 x 2,226,Bright Light Yellow,FFF03A,8
+3004,Brick 1 x 2,272,Dark Blue,0A3463,16
+3004,Brick 1 x 2,288,Dark Green,184632,8
+3004,Brick 1 x 2,320,Dark Red,720E0F,4
+3004,Brick 1 x 2,321,Dark Azure,078BC9,8
+3004,Brick 1 x 2,322,Medium Azure,36AEBF,4
+30044,Window 1 x 2 x 2 2/3 with Rounded Top,70,Reddish Brown,582A12,2
+30046,Window 1 x 2 x 2 2/3 Pane Lattice Diamond with Rounded Top,0,Black,05131D,2
+3005,Brick 1 x 1,14,Yellow,F2CD37,4
+3005,Brick 1 x 1,15,White,FFFFFF,4
+3005,Brick 1 x 1,26,Magenta,923978,4
+3005,Brick 1 x 1,27,Lime,BBE90B,8
+3005,Brick 1 x 1,29,Bright Pink,E4ADC8,6
+3005,Brick 1 x 1,30,Medium Lavender,AC78BA,6
+3005,Brick 1 x 1,71,Light Bluish Gray,A0A5A9,4
+3005,Brick 1 x 1,84,Medium Nougat,AA7D55,8
+3005,Brick 1 x 1,320,Dark Red,720E0F,4
+3009,Brick 1 x 6,4,Red,C91A09,2
+3009,Brick 1 x 6,484,Dark Orange,A95500,2
+3010,Brick 1 x 4,25,Orange,FE8A18,4
+3010,Brick 1 x 4,29,Bright Pink,E4ADC8,4
+3010,Brick 1 x 4,70,Reddish Brown,582A12,4
+3010,Brick 1 x 4,71,Light Bluish Gray,A0A5A9,4
+3010,Brick 1 x 4,226,Bright Light Yellow,FFF03A,8
+3010,Brick 1 x 4,322,Medium Azure,36AEBF,4
+30136,Brick Special 1 x 2 Palisade [aka Log],0,Black,05131D,4
+30136,Brick Special 1 x 2 Palisade [aka Log],484,Dark Orange,A95500,8
+30151b,"Brick Round 2 x 2 x 1 2/3 Dome Top, Hollow Stud",47,Trans-Clear,FCFCFC,1
+30165,"Brick Curved 2 x 2, Two Top Studs",4,Red,C91A09,2
+3020,Plate 2 x 4,19,Tan,E4CD9E,2
+3020,Plate 2 x 4,322,Medium Azure,36AEBF,4
+3021,Plate 2 x 3,2,Green,237841,2
+3022,Plate 2 x 2,19,Tan,E4CD9E,2
+3023,Plate 1 x 2,19,Tan,E4CD9E,4
+3023,Plate 1 x 2,25,Orange,FE8A18,2
+3023,Plate 1 x 2,321,Dark Azure,078BC9,4
+3028,Plate 6 x 12,10,Bright Green,4B9F4A,1
+3029,Plate 4 x 12,72,Dark Bluish Gray,6C6E68,1
+3031,Plate 4 x 4,1,Blue,0055BF,3
+3031,Plate 4 x 4,10,Bright Green,4B9F4A,1
+3032,Plate 4 x 6,14,Yellow,F2CD37,1
+3034,Plate 2 x 8,71,Light Bluish Gray,A0A5A9,2
+30367c,"Brick Round 2 x 2 Dome Top, Hollow Stud",15,White,FFFFFF,2
+3037,Brick Sloped 45° 2 x 4,14,Yellow,F2CD37,4
+3037,Brick Sloped 45° 2 x 4,26,Magenta,923978,4
+30387,"Hinge Brick 1 x 4 Locking with 1 Finger Vertical End and 2 Fingers Vertical End, 9 Teeth",14,Yellow,F2CD37,2
+3039,Brick Sloped 45° 2 x 2,1,Blue,0055BF,4
+3039,Brick Sloped 45° 2 x 2,2,Green,237841,4
+3039,Brick Sloped 45° 2 x 2,26,Magenta,923978,8
+3039,Brick Sloped 45° 2 x 2,27,Lime,BBE90B,4
+3039,Brick Sloped 45° 2 x 2,30,Medium Lavender,AC78BA,4
+3039,Brick Sloped 45° 2 x 2,47,Trans-Clear,FCFCFC,2
+3039,Brick Sloped 45° 2 x 2,191,Bright Light Orange,F8BB3D,4
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,0,Black,05131D,4
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,2,Green,237841,4
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,15,White,FFFFFF,2
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,19,Tan,E4CD9E,4
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,26,Magenta,923978,4
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,70,Reddish Brown,582A12,2
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,84,Medium Nougat,AA7D55,2
+3040b,Brick Sloped 45° 2 x 1 with Bottom Pin,322,Medium Azure,36AEBF,8
+30414,Brick Special 1 x 4 with 4 Studs on One Side,1,Blue,0055BF,2
+30414,Brick Special 1 x 4 with 4 Studs on One Side,19,Tan,E4CD9E,2
+3045,Brick Sloped 45° 2 x 2 Double Convex,322,Medium Azure,36AEBF,4
+3062b,Brick Round 1 x 1 Open Stud,70,Reddish Brown,582A12,2
+3062b,Brick Round 1 x 1 Open Stud,484,Dark Orange,A95500,4
+3065,Brick 1 x 2 without Bottom Tube,47,Trans-Clear,FCFCFC,2
+3068b,Tile 2 x 2 with Groove,27,Lime,BBE90B,4
+3068b,Tile 2 x 2 with Groove,28,Dark Tan,958A73,4
+3069b,Tile 1 x 2 with Groove,15,White,FFFFFF,3
+3245c,Brick 1 x 2 x 2 with Inside Stud Holder,71,Light Bluish Gray,A0A5A9,8
+33291,"Plant, Flower, Plate Round 1 x 1 with 4 Petals",5,Dark Pink,C870A0,3
+33291,"Plant, Flower, Plate Round 1 x 1 with 4 Petals",10,Bright Green,4B9F4A,3
+33291,"Plant, Flower, Plate Round 1 x 1 with 4 Petals",191,Bright Light Orange,F8BB3D,3
+3460,Plate 1 x 8,322,Medium Azure,36AEBF,2
+3622,Brick 1 x 3,19,Tan,E4CD9E,4
+3659,Brick Arch 1 x 4,4,Red,C91A09,4
+3660,"Brick Sloped Inverted 45° 2 x 2 [Ovoid Bottom Pin, Bar-sized Stud Holes]",19,Tan,E4CD9E,2
+3660,"Brick Sloped Inverted 45° 2 x 2 [Ovoid Bottom Pin, Bar-sized Stud Holes]",27,Lime,BBE90B,4
+3660,"Brick Sloped Inverted 45° 2 x 2 [Ovoid Bottom Pin, Bar-sized Stud Holes]",70,Reddish Brown,582A12,4
+3660,"Brick Sloped Inverted 45° 2 x 2 [Ovoid Bottom Pin, Bar-sized Stud Holes]",322,Medium Azure,36AEBF,4
+3665,Brick Sloped Inverted 45° 2 x 1,322,Medium Azure,36AEBF,4
+3666,Plate 1 x 6,322,Medium Azure,36AEBF,2
+3676,Brick Sloped Inverted 45° 2 x 2 Double Convex,72,Dark Bluish Gray,6C6E68,4
+3679,Turntable 2 x 2 Plate - Top,71,Light Bluish Gray,A0A5A9,2
+3680,"Turntable 2 x 2 Plate, Base",1,Blue,0055BF,2
+3710,Plate 1 x 4,1,Blue,0055BF,4
+3710,Plate 1 x 4,19,Tan,E4CD9E,2
+3710,Plate 1 x 4,25,Orange,FE8A18,2
+3710,Plate 1 x 4,26,Magenta,923978,2
+3795,Plate 2 x 6,70,Reddish Brown,582A12,2
+3941,Brick Round 2 x 2 with Axle Hole,47,Trans-Clear,FCFCFC,2
+3941,Brick Round 2 x 2 with Axle Hole,85,Dark Purple,3F3691,4
+3941,Brick Round 2 x 2 with Axle Hole,182,Trans-Orange,F08F1C,2
+3942c,"Cone 2 x 2 x 2, Open Stud",1,Blue,0055BF,1
+3957b,Antenna 1 x 4 with Flat Top,1,Blue,0055BF,2
+3957b,Antenna 1 x 4 with Flat Top,71,Light Bluish Gray,A0A5A9,1
+4070,Brick Special 1 x 1 with Headlight,2,Green,237841,4
+4081b,"Plate Special 1 x 1 with Clip Light, Bar Hole [Thick Ring]",1,Blue,0055BF,4
+4287c,Brick Sloped Inverted 33° 3 x 1 with Internal Stopper and No Front Stud Connection,2,Green,237841,2
+44728,Bracket 1 x 2 - 2 x 2,15,White,FFFFFF,2
+4727,"Plant, Flower 2 x 2 Leaves - Angular",10,Bright Green,4B9F4A,3
+47905,Brick Special 1 x 1 with Studs on 2 Sides,0,Black,05131D,4
+47905,Brick Special 1 x 1 with Studs on 2 Sides,4,Red,C91A09,2
+50950,Brick Curved 3 x 1 No Studs,19,Tan,E4CD9E,2
+50950,Brick Curved 3 x 1 No Studs,322,Medium Azure,36AEBF,4
+54200,Brick Sloped 30° 1 x 1 x 2/3 (Cheese Slope),4,Red,C91A09,3
+54200,Brick Sloped 30° 1 x 1 x 2/3 (Cheese Slope),5,Dark Pink,C870A0,3
+54200,Brick Sloped 30° 1 x 1 x 2/3 (Cheese Slope),36,Trans-Red,C91A09,3
+54200,Brick Sloped 30° 1 x 1 x 2/3 (Cheese Slope),322,Medium Azure,36AEBF,3
+55981,"Wheel 18 x 14 with Pin Hole, Fake Bolts and Shallow Spokes",0,Black,05131D,2
+58090,Tyre 30.4 x 14 VR Solid,0,Black,05131D,2
+59900,Cone 1 x 1 [Top Groove],182,Trans-Orange,F08F1C,3
+6014b,Wheel 11 x 12 with Hole Notched for Wheels Holder Pin,14,Yellow,F2CD37,4
+60471,"Hinge Plate 1 x 2 Locking with 2 Fingers on Side, 9 Teeth",0,Black,05131D,2
+60479,Plate 1 x 12,14,Yellow,F2CD37,1
+60481,Brick Sloped 65° 2 x 1 x 2,4,Red,C91A09,4
+60481,Brick Sloped 65° 2 x 1 x 2,15,White,FFFFFF,4
+60481,Brick Sloped 65° 2 x 1 x 2,85,Dark Purple,3F3691,4
+60481,Brick Sloped 65° 2 x 1 x 2,288,Dark Green,184632,4
+60592,Window 1 x 2 x 2 Flat Front,0,Black,05131D,2
+60592,Window 1 x 2 x 2 Flat Front,15,White,FFFFFF,3
+60593,Window 1 x 2 x 3 Flat Front,19,Tan,E4CD9E,2
+60596,Door Frame 1 x 4 x 6 Type 2,0,Black,05131D,1
+60598,Window 2 x 4 x 3 Frame with Hollow Studs,4,Red,C91A09,2
+60598,Window 2 x 4 x 3 Frame with Hollow Studs,15,White,FFFFFF,2
+60599,Door Frame 2 x 4 x 6,15,White,FFFFFF,1
+60601,Glass for Window 1 x 2 x 2 Flat,47,Trans-Clear,FCFCFC,5
+60602,Glass for Window 1 x 2 x 3 Flat Front,47,Trans-Clear,FCFCFC,2
+60607,Window 1 x 2 x 3 Pane Latticed with Thick Corner Tabs,70,Reddish Brown,582A12,2
+60607,Window 1 x 2 x 3 Pane Latticed with Thick Corner Tabs,297,Pearl Gold,AA7F2E,2
+60608,Window 1 x 2 x 3 Pane with Thick Corner Tabs,14,Yellow,F2CD37,4
+60621,Door 1 x 4 x 6 Barred with Stud Handle,71,Light Bluish Gray,A0A5A9,1
+60623,Door 1 x 4 x 6 with 4 Panes and Stud Handle,14,Yellow,F2CD37,1
+6081,Brick Curved 2 x 4 x 1 1/3,14,Yellow,F2CD37,4
+6091,Brick Curved 1 x 2 x 1 1/3 with Curved Top,4,Red,C91A09,2
+6091,Brick Curved 1 x 2 x 1 1/3 with Curved Top,19,Tan,E4CD9E,4
+61252,Plate Special 1 x 1 with Clip Horizontal [Thick Open O Clip],71,Light Bluish Gray,A0A5A9,1
+6141,Plate Round 1 x 1 with Solid Stud,4,Red,C91A09,3
+6141,Plate Round 1 x 1 with Solid Stud,70,Reddish Brown,582A12,3
+6141,Plate Round 1 x 1 with Solid Stud,72,Dark Bluish Gray,6C6E68,2
+6141,Plate Round 1 x 1 with Solid Stud,85,Dark Purple,3F3691,3
+6141,Plate Round 1 x 1 with Solid Stud,182,Trans-Orange,F08F1C,3
+6215,Brick Curved 2 x 3,15,White,FFFFFF,4
+6223,Brick 2 x 2 without Inside Ridges,36,Trans-Red,C91A09,1
+6232,Brick Special 2 x 2 with Pin and Axle Hole,14,Yellow,F2CD37,2
+76959,"Brick Sloped Inverted 45° 2 x 2 [Round Hollow Bottom Pin, Bar-sized Stud Holes]",15,White,FFFFFF,4
+85080,Brick Round Corner 2 x 2 Macaroni with Stud Notch and Reinforced Underside [New Style],71,Light Bluish Gray,A0A5A9,4
+85984,Brick Sloped 30° 1 x 2 x 2/3,0,Black,05131D,2
+85984,Brick Sloped 30° 1 x 2 x 2/3,2,Green,237841,4
+85984,Brick Sloped 30° 1 x 2 x 2/3,4,Red,C91A09,4
+85984,Brick Sloped 30° 1 x 2 x 2/3,85,Dark Purple,3F3691,4
+87079,Tile 2 x 4 with Groove,71,Light Bluish Gray,A0A5A9,4
+87081,Brick Round 4 x 4 Centre Hole,0,Black,05131D,1
+87544,Panel 1 x 2 x 3 [Side Supports / Hollow Studs],47,Trans-Clear,FCFCFC,2
+87697,Tyre 21 x 12 with Offset Tread Small Wide and Center Band,0,Black,05131D,4
+90195,Window 1 x 2 x 2 Castle,71,Light Bluish Gray,A0A5A9,2
+91405,Plate 16 x 16,10,Bright Green,4B9F4A,1
+92582,Hinge Plate 2 x 2 Locking with 1 Finger on Top,0,Black,05131D,2
+93273,Brick Curved 4 x 1 Double with No Studs,14,Yellow,F2CD37,2
+93273,Brick Curved 4 x 1 Double with No Studs,322,Medium Azure,36AEBF,4
+96874,Brick and Axle Separator v2.0,25,Orange,FE8A18,1
+98138pr0008,Tile Round 1 x 1 with Offset Black Eye Print,15,White,FFFFFF,4
+98138pr0026,Tile Round 1 x 1 with Black Eye Closed with Eyelashes Print,15,White,FFFFFF,3
+98262,"Plant, Flower 2 x 2 - Round [Solid Stud]",14,Yellow,F2CD37,2
+99206,Plate Special 2 x 2 x 2/3 with Two Studs On Side and Two Raised [Solid Anti-stud],71,Light Bluish Gray,A0A5A9,1
