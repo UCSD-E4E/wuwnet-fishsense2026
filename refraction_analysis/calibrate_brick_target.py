@@ -2,14 +2,14 @@
 
     uv run python refraction_analysis/calibrate_brick_target.py \\
         --frames "/home/chris/data/Corner Target" \\
-        --model calibration_model/corner_10698.io \\
+        --model calibration_model/calibration_model.io \\
         [--checkerboard "/home/chris/data/Corner Checkerboard"]
 
-Without --frames it only checks the model -- worth running on the Studio export
-before the shoot. Raw ORF only; the TG-6's JPEGs carry an in-camera lens correction. Before any
-image is touched the model is checked against the design it was built from and
-against the design rules, so a swapped brick shows up here rather than as a bad
-calibration.
+Without --frames it only checks the model -- worth running on a Studio export
+before a shoot. Raw ORF only; the TG-6's JPEGs carry an in-camera lens correction.
+Before any image is touched the model is checked against the design rules, and
+against --design if one is given, so a swapped brick shows up here rather than
+as a bad calibration.
 """
 
 import argparse
@@ -20,26 +20,26 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from fishsense_wuwnet.brick_calibration import calibrate_folder  # noqa: E402
+from fishsense_wuwnet.calibration_model import MODEL_IO  # noqa: E402
 from fishsense_wuwnet.target_design import compare  # noqa: E402
 from fishsense_wuwnet.target_rules import report  # noqa: E402
-
-DESIGN = REPO / "calibration_model" / "corner_10698.ldr"
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--frames", type=Path, help="folder of raw .ORF frames of the target")
-    parser.add_argument("--model", type=Path, required=True, help="the target as built (Studio .io or .ldr)")
-    parser.add_argument("--design", type=Path, default=DESIGN, help="the design it was built from")
+    parser.add_argument("--model", type=Path, default=MODEL_IO, help="the target as built (Studio .io or .ldr)")
+    parser.add_argument("--design", type=Path, help="a design to check the model against, brick for brick")
     parser.add_argument("--checkerboard", type=Path, help="same-session checkerboard frames, for distortion")
     parser.add_argument("--cache", type=Path, help="where to cache correspondences")
     args = parser.parse_args()
 
-    diff = compare(args.model, args.design)
-    print(f"model vs design: {diff['matched']} bricks match")
-    for kind in ("recoloured", "missing", "extra"):
-        for item in diff[kind]:
-            print(f"  {kind}: {item}")
+    if args.design is not None:
+        diff = compare(args.model, args.design)
+        print(f"model vs design: {diff['matched']} bricks match")
+        for kind in ("recoloured", "missing", "extra"):
+            for item in diff[kind]:
+                print(f"  {kind}: {item}")
     print(report(args.model))
     if args.frames is None:
         return

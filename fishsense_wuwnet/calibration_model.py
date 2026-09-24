@@ -55,17 +55,16 @@ BRICK_MM = 9.6
 BRICK_CLEARANCE_MM = 0.2
 CHAMFER_MM = 0.25
 
-#: The target that was built and photographed on 2026-09-21 -- the build every
-#: raw frame, cached detection and figure in this repo is of. Pinned under its own
-#: name so that editing a design in Studio (which saves over
-#: `calibration_model.io`) cannot silently change what the photographs are
-#: matched against. Studio writes several `.ldr` variants into the zip;
-#: `model.ldr` is the one it treats as current.
-#: `FISHSENSE_TARGET_MODEL` overrides it, for running the suite against a design.
+#: The target as built: the corner from one LEGO Classic 10698, exported from
+#: Studio (see `target_design`). Studio writes several `.ldr` variants into the
+#: zip; `model.ldr` is the one it treats as current. `FISHSENSE_TARGET_MODEL`
+#: overrides it, for running the suite against a design. The earlier tower, and
+#: everything measured on its photographs, is in git history before this file
+#: held the corner.
 MODEL_IO = Path(
     os.environ.get(
         "FISHSENSE_TARGET_MODEL",
-        Path(__file__).resolve().parent.parent / "calibration_model" / "as_built_2026-09-20.io",
+        Path(__file__).resolve().parent.parent / "calibration_model" / "calibration_model.io",
     )
 ).resolve()
 MODEL_ENTRY = "model.ldr"

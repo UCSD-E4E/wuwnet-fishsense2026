@@ -5,10 +5,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fishsense_wuwnet.calibration_model import MODEL_IO, load_bricks
-from fishsense_wuwnet.target_rules import check, load_inventory, window_ambiguity
+from fishsense_wuwnet.calibration_model import MODEL_IO, _ldraw_lines, load_bricks
+from fishsense_wuwnet.target_rules import check, load_inventory
 
-CORNER = Path(__file__).resolve().parent.parent / "calibration_model" / "corner_10698.ldr"
+#: The rules were checked against the tower this replaced, whose joint and window
+#: figures had been measured independently (0 of 407 same-colour joints, 19 %
+#: ambiguous windows, worst x5) -- they agreed. That test went with the tower model.
+CORNER = MODEL_IO
 
 
 def _by_rule(path):
@@ -19,26 +22,13 @@ def test_the_inventory_is_the_whole_box():
     assert sum(load_inventory().values()) == 790
 
 
-def test_the_rules_reproduce_what_was_measured_on_the_photographed_build():
-    """The joint and window numbers were measured independently before these rules
-    existed -- 0 of 407 joints shared a colour, 19 % of windows were ambiguous, worst
-    five times -- so agreeing with them is a check on the rules, not on the build."""
-    rules = _by_rule(MODEL_IO)
-    assert rules["4"].passed and "0 of 407" in rules["4"].detail
-    placements, ambiguous, worst = window_ambiguity(MODEL_IO)
-    assert ambiguous == pytest.approx(0.19, abs=0.01) and worst == 5
-    assert rules["6"].passed
-    # And it was not built from one box, nor in readable colours: 33 black bricks.
-    assert not rules["1"].passed and not rules["3"].passed
-
-
-def test_the_corner_design_passes_every_rule():
+def test_the_target_passes_every_rule():
     failed = [f"{r.rule}: {r.detail}" for r in check(CORNER) if not r.passed]
     assert not failed, failed
 
 
 def _variant(tmp_path, edit):
-    lines = CORNER.read_text().splitlines()
+    lines = _ldraw_lines(CORNER)
     parts = [i for i, line in enumerate(lines) if line.startswith("1 ")]
     lines = edit(lines, parts)
     out = tmp_path / "variant.ldr"
@@ -70,7 +60,7 @@ def test_a_same_group_joint_is_caught(tmp_path):
     assert not rules["4"].passed and not rules["5"].passed
 
 
-def test_the_corner_design_is_detected_and_posed():
+def test_the_target_is_detected_and_posed():
     """The same renderer and detector the as-built target is tested with."""
     cv2 = pytest.importorskip("cv2")
     from fishsense_wuwnet.target_detect import detect_quads, match

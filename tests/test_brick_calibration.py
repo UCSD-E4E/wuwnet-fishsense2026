@@ -7,11 +7,11 @@ import numpy as np
 import pytest
 
 from fishsense_wuwnet.brick_calibration import SENSOR, reject_views
-from fishsense_wuwnet.calibration_model import brick_corners, exposed_faces, load_bricks, visible_corners
+from fishsense_wuwnet.calibration_model import MODEL_IO, _ldraw_lines, brick_corners, exposed_faces, load_bricks, visible_corners
 from fishsense_wuwnet.target_design import compare
 from fishsense_wuwnet.target_render import look_at
 
-CORNER = Path(__file__).resolve().parent.parent / "calibration_model" / "corner_10698.ldr"
+CORNER = MODEL_IO
 TRUTH = np.array([[2950.0, 0, 2007.0], [0, 2918.2, 1508.0], [0, 0, 1.0]])  # 1.09 % anisotropic
 OUTSIDE = np.radians(np.linspace(150.0, 300.0, 8))  # the half-space outside the corner
 
@@ -30,7 +30,7 @@ def test_compare_lines_up_a_turned_export_and_finds_a_recoloured_brick(tmp_path)
     """Studio places and turns the model freely; only the bricks themselves should matter."""
     turn = np.array([[0.0, 0, 1], [0, 1, 0], [-1, 0, 0]])  # quarter turn about LDraw's vertical
     out, first = [], True
-    for line in CORNER.read_text().splitlines():
+    for line in _ldraw_lines(CORNER):
         if not line.startswith("1 "):
             out.append(line)
             continue

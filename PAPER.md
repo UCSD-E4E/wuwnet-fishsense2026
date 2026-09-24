@@ -627,11 +627,14 @@ carries a visible banner saying so, and must not go to camera-ready in that stat
 | §6 | `pool-decoy-length-by-camera-model` | final | 12 of 13 decoy frames; 1 rejected for a mask whose aspect ratio misses the calipered 2.95 by more than a quarter, a test needing no range and no known length. All three models read the same length -- median -2.6 / -2.8 / -2.7 % in legend order -- on a fish-shaped body at unconstrained pose. That is not evidence the uncorrected model is sound; it is evidence this measurement cannot tell, because near the axis the port's range and magnification errors cancel out of a length. §4.2 carries the range, where they do not. Note also that the beam fit passes the error through rather than absorbing it: the uncorrected model recovers the laser's transverse offset at 101.2 mm against a bench 104, essentially right, while its ranges come out a quarter short. The common -2.7 % offset is shared by all three and says nothing about any of them -- the beam is fitted on the board session and applied across to the decoy, which it precedes by about ten minutes and one handling event. |
 | §8 | `sim-length-error-from-a-water-index-mismatch` | final | What assuming the water index costs. Both models are calibrated for fresh water and the true index is then swept across it; both degrade at the same rate, because the error is in the physics and not in either correction. What differs is the price of fixing it: Pinax takes the index as a parameter, while an in-water calibration needs another session in water of the right salinity. Note the geometry -- the fish sits at half the frame half-width here, further off axis than §4.2's reachable envelope allows, so these are upper bounds; §8 gives the reachable figures. |
 
-All 21 are now drawn from measurement. The three that stood in for photographs of
-the calibration target -- its detection, its conditioning, and the decoy measured
-against it -- run on 21 raw frames of the built tower, cached in
-`data/lego_target_raw.npz`. Raw rather than JPEG: the camera's JPEG pipeline
-applies its own lens correction, so JPEG geometry is not the sensor's.
+All 21 are drawn from measurement. The three drawn from photographs of the
+calibration target -- its detection, its conditioning, and the decoy measured
+against it -- ran on 21 raw frames of the tower as submitted. The tower has since
+been replaced by the corner target (`calibration_model/calibration_model.io`), and
+those three figures' code, the tower model and its cached detections were removed
+with it; they are in git history at commit 85f611c. Raw rather than JPEG: the
+camera's JPEG pipeline applies its own lens correction, so JPEG geometry is not the
+sensor's.
 
 §5's and §6's figures are deliberately one question each. §5's varies only the target
 the camera was calibrated on, both calibrations in air and both corrected identically,

@@ -1,8 +1,9 @@
 """Mockup sheet for a brick target design: rendered views, unfolded walls, parts list.
 
-    uv run python refraction_analysis/make_target_mockup.py [design.ldr]
+    uv run python refraction_analysis/make_target_mockup.py [model]
 
-Writes `figures/target-mockup-<name>.png`. The views are the same renderer the
+Writes `figures/target-mockup.png` for the target, or `target-mockup-<name>.png`
+for any other model given. The views are the same renderer the
 detector tests use, so what is drawn is what the pipeline is scored against.
 """
 
@@ -21,11 +22,11 @@ from matplotlib.patches import Polygon
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from fishsense_wuwnet.calibration_model import PARTS, brick_corners, exposed_faces, load_bricks  # noqa: E402
+from fishsense_wuwnet.calibration_model import MODEL_IO, PARTS, brick_corners, exposed_faces, load_bricks  # noqa: E402
 from fishsense_wuwnet.target_render import LDRAW_BGR, look_at, render  # noqa: E402
 from fishsense_wuwnet.target_rules import INVENTORY_CSV, check  # noqa: E402
 
-DESIGN = REPO / "calibration_model" / "corner_10698.ldr"
+DESIGN = MODEL_IO
 PART_NAMES = {p: f"{s[1]}x{s[0]}" for p, s in PARTS.items()}
 
 
@@ -136,9 +137,10 @@ def main(design: Path = DESIGN):
             f"{len(bricks)} bricks, all from one LEGO Classic 10698\n"
             f"{size[0]:.0f} x {size[1]:.0f} x {size[2]:.0f} mm\n\n" + "\n".join(lines),
             transform=ax.transAxes, fontsize=8.5, va="bottom", family="monospace")
-    fig.suptitle(f"Corner calibration target -- {design.stem}", fontsize=12)
+    fig.suptitle("Corner calibration target", fontsize=12)
     fig.tight_layout()
-    out = REPO / "figures" / f"target-mockup-{design.stem}.png"
+    name = "target-mockup" if Path(design).resolve() == DESIGN else f"target-mockup-{Path(design).stem}"
+    out = REPO / "figures" / f"{name}.png"
     fig.savefig(out, dpi=150)
     print(out)
 

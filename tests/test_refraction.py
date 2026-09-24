@@ -426,35 +426,26 @@ def test_the_calibration_target_geometry_is_exact_and_metric():
     )
 
     bricks = load_bricks()
-    assert len(bricks) == 135
-    assert {b.part for b in bricks} == {"3001.dat"}  # all 2x4 bricks
+    assert len(bricks) == 35
+    assert {b.part for b in bricks} == {"3001.dat", "3002.dat", "3003.dat"}  # two-wide only
 
-    # Nine courses of brick, four walls: 144 x 128 x 86.4 mm, every dimension a
-    # whole number of studs or bricks.
-    # 18 studs by 16 studs by 9 bricks. The tolerance is 1 micron, not machine
-    # epsilon: Studio writes rotations to finite precision, which leaves tens of
-    # nanometres in the extent. Every brick does sit exactly on the LEGO grid.
+    # Eight courses, two walls at a right angle: 64 x 64 x 76.8 mm, every
+    # dimension a whole number of studs or bricks. The tolerance is 1 micron, not
+    # machine epsilon: Studio writes rotations to finite precision, which leaves
+    # tens of nanometres in the extent. Every brick does sit exactly on the grid.
     extent = extent_mm()
-    assert extent == pytest.approx([18 * STUD_MM, 16 * STUD_MM, 9 * BRICK_MM], abs=1e-3)
+    assert extent == pytest.approx([8 * STUD_MM, 8 * STUD_MM, 8 * BRICK_MM], abs=1e-3)
 
     points = model_points()
-    assert points.shape == (8 * 135, 3)
+    assert points.shape == (8 * 35, 3)
 
-    # Five colours, none of them black. The original design used black and white
-    # with four marker colours at the wall ends, which made a detected marker
-    # name the face; that convention is gone, because a periodic two-colour bond
-    # left every local window ambiguous and a black brick has no visible edge
-    # against the dark seam. Colours are now spread so that no joint has the
-    # same colour on both sides -- see the calibration-model tests.
-    from fishsense_wuwnet.calibration_model import COLOURS
+    # Every brick is a colour the classifier reads, so nothing loads as a colour
+    # the detector cannot see. Which colours those are was measured on 623 faces
+    # of the earlier tower's photographs -- see `COLOUR_CLASS`.
+    from fishsense_wuwnet.calibration_model import COLOUR_CLASS
 
-    # The palette is whatever was on hand. The design called for five colours and
-    # no black; the target as built uses eight, including 33 black and two greys,
-    # because a target a citizen scientist cannot source is not a deployable one.
-    # What is asserted here is the part that must hold regardless: every brick is
-    # a colour the module can name, so nothing silently loads as an unknown code.
-    assert all(b.colour in COLOURS for b in bricks)
-    assert len({b.colour for b in bricks}) >= 5
+    assert all(b.colour in COLOUR_CLASS for b in bricks)
+    assert len({COLOUR_CLASS[b.colour] for b in bricks}) == 4
 
 
 def test_similarity_fit_separates_shape_error_from_scale():

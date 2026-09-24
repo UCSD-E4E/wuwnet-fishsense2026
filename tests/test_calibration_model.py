@@ -26,14 +26,15 @@ from fishsense_wuwnet.calibration_model import (
 )
 
 
-def test_the_target_is_one_part_repeated():
+def test_the_target_is_two_wide_bricks_from_the_box():
+    """35 two-wide bricks: only these have a readable face on both sides of a wall."""
     bricks = load_bricks()
-    assert len(bricks) == 135
-    assert {b.part for b in bricks} == {"3001.dat"}
+    assert len(bricks) == 35
+    assert {b.part for b in bricks} == {"3001.dat", "3002.dat", "3003.dat"}
 
 
 def test_extent_is_a_whole_number_of_studs_and_bricks():
-    """18 x 16 studs by 9 bricks.
+    """8 x 8 studs by 8 bricks: two walls of 64 mm at a right angle, 76.8 mm high.
 
     The tolerance is a micron rather than exact because Studio rounds the
     rotation matrices it writes into the `.ldr`, which leaves about 40 nm on a
@@ -43,7 +44,7 @@ def test_extent_is_a_whole_number_of_studs_and_bricks():
     exact equality.
     """
     extent = extent_mm()
-    assert extent == pytest.approx([18 * STUD_MM, 16 * STUD_MM, 9 * BRICK_MM], abs=1e-3)
+    assert extent == pytest.approx([8 * STUD_MM, 8 * STUD_MM, 8 * BRICK_MM], abs=1e-3)
 
 
 def test_no_joint_has_the_same_colour_on_both_sides():
@@ -88,26 +89,24 @@ def test_no_joint_has_the_same_colour_on_both_sides():
     assert shared == 0
 
 
-def test_exposed_faces_exclude_the_cavity():
-    """The tower is hollow, so the inner wall surface passes a local probe.
+def test_exposed_faces_are_the_surface_a_camera_can_see():
+    """Faces on the target's surface, and none buried between bricks.
 
-    Only the outward ray test rejects it, and getting this wrong would roughly
-    double the face count and put object points on surfaces no camera can see.
-
-    The ray has to be cast from every corner of the face and not just its
-    centre. Casting from the centre alone let two faces through -- the inside
-    of one wall, whose centre ray left through a gap in the wall opposite -- and
-    they were reported as part of that opposite wall, 128 mm from its plane.
-    Nothing downstream noticed, because correspondence fits a homography per
-    wall and simply absorbed them as outliers.
+    The ray is cast from every corner of a face, not just its centre. On the
+    hollow tower this target replaced, casting from the centre alone let two
+    cavity faces through, reported as part of the opposite wall 128 mm from its
+    plane -- and nothing downstream noticed, because correspondence absorbed them
+    as outliers. A corner has no cavity, but the same test separates a wall's
+    inner face (open, and visible) from the faces bricks press against each other.
     """
     faces = exposed_faces()
     sides = [f for f in faces if f.is_side]
-    assert len(faces) == 201
-    assert Counter(f.is_side for f in faces) == {True: 171, False: 30}
-    assert sorted(Counter(tuple(f.normal) for f in sides).values()) == [40, 41, 45, 45]
+    assert len(faces) == 94
+    assert Counter(f.is_side for f in faces) == {True: 86, False: 8}
+    # Outer and inner face of each wall, and each wall's far end.
+    assert sorted(Counter(tuple(np.round(f.normal, 6)) for f in sides).values()) == [20, 20, 23, 23]
     depths = np.array([face.centre @ face.normal for face in sides])
-    assert np.abs(depths[:, None] - [48.0, 64.0, 80.0]).min(axis=1).max() < 1e-3
+    assert np.abs(depths[:, None] - [0.0, 16.0, 64.0]).min(axis=1).max() < 1e-3
 
 
 def test_every_lattice_point_sits_on_a_brick_corner():
@@ -126,65 +125,28 @@ def test_the_bond_produces_tee_junctions_rather_than_saddle_points():
     """
     points = lattice_points()
     junctions = [p for p in points if p.is_junction]
-    assert len(points) == 350
-    assert len(junctions) == 240
+    assert len(points) == 198
+    assert len(junctions) == 68
     assert all(p.is_tee for p in junctions), "a running bond admits no other kind"
 
 
-def test_a_local_colour_window_is_mostly_but_no_longer_wholly_unique():
-    """Local uniqueness degraded with the as-built palette, and it did not matter.
+def test_a_local_colour_window_is_distinguishable():
+    """Few 3-course by 4-stud windows of colour groups repeat anywhere on the target.
 
-    The designed five-colour layout made every three-course by four-stud window
-    unique. Built from bricks on hand -- green down to two, three near-neutral
-    tones -- 19 % of windows now match somewhere else, at worst five places.
-
-    Kept as a *measurement* rather than an assertion of uniqueness, because the
-    obvious inference from that degradation is wrong. Correspondence does not
-    look up windows; it fits a homography per wall and grows it on its own
-    inliers, so it needs the wall to be locally distinguishable on average, not
-    everywhere. Measured against the designed layout on the same eight views,
-    the as-built target gives fewer detected faces (44 against 64) and the same
-    calibration: fx -0.013 % against -0.249 %, fx/fy +0.040 % against +0.076 %.
-
-    This number is worth watching. If it climbs much further the homography will
-    start seeding on the wrong brick, and the failure mode is not subtle -- on a
-    periodic layout a wrong anchor reprojects under a pixel while posing 147
-    degrees from the truth.
+    Correspondence does not look windows up; it fits a homography per wall and
+    grows it on its own inliers, so the wall needs to be locally distinguishable
+    on average, not everywhere. The tower it replaced ran at 19 % ambiguous, worst
+    five times, and calibrated correctly; the corner is at 5 %, worst twice. If
+    this climbs, the homography starts seeding on the wrong brick, and the failure
+    is not subtle: on a periodic layout a wrong anchor reprojects under a pixel
+    while posing 147 degrees from the truth.
     """
-    up = np.array([0.0, 0.0, 1.0])
-    walls = defaultdict(list)
-    for face in exposed_faces(sides_only=True):
-        walls[tuple(np.round(face.normal, 6))].append(face)
+    from fishsense_wuwnet.target_rules import MAX_AMBIGUOUS, MAX_REPEAT, window_ambiguity
 
-    windows = defaultdict(int)
-    placements = 0
-    for normal, wall in walls.items():
-        along = np.cross(up, np.array(normal))
-        boxes = [(f.corners @ along, f.corners @ up, f.colour) for f in wall]
-        a0 = min(a.min() for a, _, _ in boxes)
-        z0 = min(z.min() for _, z, _ in boxes)
-        na = int(round((max(a.max() for a, _, _ in boxes) - a0) / STUD_MM))
-        nz = int(round((max(z.max() for _, z, _ in boxes) - z0) / BRICK_MM))
-        grid = np.full((nz, na), -1, int)
-        for i in range(nz):
-            for j in range(na):
-                pa, pz = a0 + (j + 0.5) * STUD_MM, z0 + (i + 0.5) * BRICK_MM
-                for a, z, colour in boxes:
-                    if a.min() <= pa <= a.max() and z.min() <= pz <= z.max():
-                        grid[i, j] = colour
-                        break
-        for i in range(nz - 2):
-            for j in range(na - 3):
-                window = grid[i : i + 3, j : j + 4]
-                if (window < 0).any():
-                    continue
-                placements += 1
-                windows[window.tobytes()] += 1
-
-    ambiguous = sum(count for count in windows.values() if count > 1)
-    assert placements > 300
-    assert ambiguous / placements < 0.35, "the layout is becoming periodic"
-    assert max(windows.values()) <= 8
+    placements, ambiguous, worst = window_ambiguity()
+    assert placements >= 60
+    assert ambiguous <= MAX_AMBIGUOUS
+    assert worst <= MAX_REPEAT
 
 
 def test_fitting_the_model_to_a_transformed_copy_recovers_the_transform():

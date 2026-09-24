@@ -227,11 +227,11 @@ def render(
     return TargetView(image, lattice, pixels, facing & inside & (depth > 0))
 
 
-def look_at(eye_mm, target_mm=(0.0, 0.0, 43.2), up=(0.0, 0.0, 1.0)):
+def look_at(eye_mm, target_mm=(32.0, 32.0, 38.4), up=(0.0, 0.0, 1.0)):
     """A camera pose, as ``(rotation, translation)`` taking model mm to camera mm.
 
-    The default target is the tower's centre of height, so `eye_mm` alone frames
-    a view. Handy for generating a calibration sweep without composing matrices
+    The default target is the middle of the corner target's bounding box, so
+    `eye_mm` alone frames a view. Handy for generating a calibration sweep without composing matrices
     by hand.
     """
     eye = np.asarray(eye_mm, dtype=float)

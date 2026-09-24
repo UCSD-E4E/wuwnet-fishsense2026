@@ -21,7 +21,22 @@ from fishsense_wuwnet.target_render import look_at, render
 
 SIZE = (1400, 1050)
 CAMERA = np.array([[1000.0, 0.0, 700.0], [0.0, 1000.0, 525.0], [0.0, 0.0, 1.0]])
-VIEWS = [(260.0, -330.0, 190.0), (0.0, -520.0, 60.0), (-300.0, -400.0, 150.0)]
+#: `look_at`'s default aim: the middle of the corner target.
+AIM = np.array([32.0, 32.0, 38.4])
+
+
+def _eye(azimuth_deg, radius, elevation):
+    """A camera outside the corner (it faces azimuth ~220 degrees) looking at it.
+
+    Close, because the corner is small: at this render's focal length 19-23 cm is
+    what 13-31 cm is to the TG-6, the range it was measured to calibrate over.
+    """
+    a = np.radians(azimuth_deg)
+    return tuple(AIM + radius * np.array([np.cos(a) * np.cos(elevation),
+                                          np.sin(a) * np.cos(elevation), np.sin(elevation)]))
+
+
+VIEWS = [_eye(225.0, 200.0, 0.40), _eye(195.0, 215.0, 0.20), _eye(255.0, 190.0, 0.30)]
 
 
 def _detect(eye, camera=CAMERA):
@@ -78,7 +93,7 @@ def test_the_camera_is_not_placed_behind_the_wall_it_is_looking_at(eye):
     )
     recovered, _ = cv2.Rodrigues(rvec)
     centre = -recovered.T @ tvec.reshape(3)
-    standoff = float(np.linalg.norm(eye))
+    standoff = float(np.linalg.norm(np.asarray(eye) - AIM))
     assert np.linalg.norm(centre - np.asarray(eye)) < 0.05 * standoff
 
 
@@ -90,7 +105,7 @@ def test_a_staggered_column_of_one_colour_is_not_one_quad():
     be fitted as a single enormous brick and put object points on a lie. The
     guard is that no detected quad is much larger than a brick should be.
     """
-    view, quads, _ = _detect((260.0, -330.0, 190.0))
+    view, quads, _ = _detect(VIEWS[0])
     areas = np.array([abs(cv2.contourArea(q.corners.astype(np.float32))) for q in quads])
     assert len(areas) > 0
     assert areas.max() < 6.0 * np.median(areas)
@@ -104,7 +119,7 @@ def test_bricks_on_the_targets_vertical_edge_are_recovered_as_two_faces():
     where two walls are seen at once, which is what ties their poses together.
     The check is that faces are recovered on more than one wall at a time.
     """
-    _, quads, correspondence = _detect((260.0, -330.0, 190.0))
+    _, quads, correspondence = _detect(VIEWS[0])
     walls = {tuple(np.round(f.normal, 6)) for f in correspondence.faces}
     assert len(walls) >= 2, "only one wall matched; chevrons are being dropped"
     assert len(quads) >= len(correspondence) // 4
@@ -113,8 +128,9 @@ def test_bricks_on_the_targets_vertical_edge_are_recovered_as_two_faces():
 def test_one_seed_colour_suffices_because_local_windows_are_unique():
     """The target's uniqueness is what lets the hypothesis search stay cheap.
 
-    Every three-course by four-stud window on this target is unique, so a wrong
-    anchor cannot match much and the first correct one wins. Widening the seed
+    Nearly every three-course by four-stud window on this target is unique (5 %
+    repeat, none more than twice), so a wrong anchor cannot match much and the
+    first correct one wins. Widening the seed
     search then buys nothing and costs several times the runtime. On the earlier
     periodic target the opposite held, and one colour produced a confident pose
     147 degrees from the truth -- so this is a property of *this* target, and it
@@ -124,7 +140,7 @@ def test_one_seed_colour_suffices_because_local_windows_are_unique():
 
     from fishsense_wuwnet.target_detect import _seed_faces
 
-    rotation, translation = look_at((-300.0, -400.0, 150.0))
+    rotation, translation = look_at(VIEWS[2])
     view = render(CAMERA, rotation, translation, size=SIZE)
     quads = detect_quads(view.image, min_area_px=40.0)
 
@@ -142,7 +158,7 @@ def test_one_seed_colour_suffices_because_local_windows_are_unique():
 
 
 def test_the_three_dimensional_target_settles_the_focal_length_ratio():
-    """The reason for a tower rather than a board.
+    """The reason for a three-dimensional target rather than a board.
 
     A planar target leaves `fx/fy` poorly constrained unless the views are
     rolled, which is exactly why our own pool dataset cannot settle a ~1 %
@@ -153,14 +169,10 @@ def test_the_three_dimensional_target_settles_the_focal_length_ratio():
     truth = np.array([[1000.0, 0.0, 712.0], [0.0, 989.0, 520.0], [0.0, 0.0, 1.0]])
     rng = np.random.default_rng(3)
     object_points, image_points = [], []
-    for azimuth in np.linspace(0.0, 2.0 * np.pi, 10, endpoint=False):
-        radius = rng.uniform(330.0, 520.0)
-        elevation = rng.uniform(-0.2, 0.5)
-        eye = (
-            radius * np.cos(azimuth) * np.cos(elevation),
-            radius * np.sin(azimuth) * np.cos(elevation),
-            43.2 + radius * np.sin(elevation),
-        )
+    # From outside the corner only: from inside, one wall can match as its own
+    # mirror image and a single such view ruins the fit (see `brick_calibration`).
+    for azimuth in np.linspace(150.0, 300.0, 10):
+        eye = _eye(azimuth, rng.uniform(145.0, 230.0), rng.uniform(-0.2, 0.5))
         _, _, correspondence = _detect(eye, camera=truth)
         if len(correspondence) >= 24:
             object_points.append(correspondence.object_points.astype(np.float32))
@@ -200,7 +212,7 @@ def test_colour_front_end_is_the_part_that_is_not_settled():
     """
     from fishsense_wuwnet.target_detect import classify_colours
 
-    rotation, translation = look_at((260.0, -330.0, 190.0))
+    rotation, translation = look_at(VIEWS[0])
     view = render(CAMERA, rotation, translation, size=SIZE, background=(70, 60, 48))
     labels = classify_colours(view.image)
     assert (labels == 1).sum() < 0.05 * labels.size

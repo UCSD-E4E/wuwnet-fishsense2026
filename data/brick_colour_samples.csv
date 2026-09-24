@@ -1,9 +1,10 @@
-# One row per visible brick face of the photographed build (as_built_2026-09-20.io),
-# sampled in 11 raw frames of 'Lego Model Horizontal' (ISO 1600) inside the face's
-# projected outline shrunk to 60 %. Pose from the committed matched correspondences
-# (data/lego_target_raw.npz), intrinsics from the in-air board. Lab is CIE L*a*b* of
-# the median pixel; classifier_label is target_detect.classify_colours' modal label
-# inside the face (-1 = unlabelled). Produced by refraction_analysis/measure_brick_colours.py.
+# One row per visible brick face of the tower target photographed 2026-09-21, sampled
+# in 11 raw frames (ISO 1600) inside the face's projected outline shrunk to 60 %.
+# Lab is CIE L*a*b* of the median pixel; classifier_label is
+# target_detect.classify_colours' modal label inside the face (-1 = unlabelled).
+# The evidence behind calibration_model.COLOUR_CLASS. The tower model, its cached
+# detections and the sampling script (refraction_analysis/measure_brick_colours.py)
+# are in git history at commit 85f611c; the photographs are not in the repo.
 model_colour,L,a,b,cos_view,pixels,classifier_label,frame_index
 15,79.61,-1.00,8.00,0.398,3124,15,0
 14,77.25,-4.00,59.00,0.396,1565,14,0
