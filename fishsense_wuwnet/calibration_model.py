@@ -21,6 +21,7 @@ so that model coordinates are right-handed with z up, in millimetres.
 """
 
 import re
+import os
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,7 +61,13 @@ CHAMFER_MM = 0.25
 #: `calibration_model.io`) cannot silently change what the photographs are
 #: matched against. Studio writes several `.ldr` variants into the zip;
 #: `model.ldr` is the one it treats as current.
-MODEL_IO = Path(__file__).resolve().parent.parent / "calibration_model" / "as_built_2026-09-20.io"
+#: `FISHSENSE_TARGET_MODEL` overrides it, for running the suite against a design.
+MODEL_IO = Path(
+    os.environ.get(
+        "FISHSENSE_TARGET_MODEL",
+        Path(__file__).resolve().parent.parent / "calibration_model" / "as_built_2026-09-20.io",
+    )
+).resolve()
 MODEL_ENTRY = "model.ldr"
 
 #: LDraw colour codes actually used by the target. The four saturated colours are
