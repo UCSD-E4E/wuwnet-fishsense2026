@@ -98,3 +98,35 @@ one model; don't use it as the reference.)
 
 ISO 100-200; about as many rolled as upright corner frames; both board rolls in
 the same copy; from outside the corner, within 32 cm.
+
+## Structure-from-motion: calibration without a target (2026-09-26)
+
+`refraction_analysis/sfm_calibration.py` (COLMAP via `pycolmap`, `uv sync --group
+sfm`) self-calibrates from ordinary photographs: features matched across views,
+scene and camera solved together, nothing known about any target. Started from
+COLMAP's default focal guess, about 60 % long here, so the focal length is recovered.
+
+| | f | fx/fy | principal point | k1 |
+|---|---|---|---|---|
+| SfM on the checkerboard frames | 2964.5-2965.7 | 0.9999 | (2001-2007, 1512-1522) | -0.162 |
+| corner, own distortion | 2966.9 | 1.0022 | (2002, 1509) | -0.155 |
+| checkerboard calibration | 2970.5 | sensor 1.0001 | (2030, 1490) | -0.152 |
+
+- **On the 40 checkerboard frames SfM works**: 39 registered, ~8000 points, 1.0 px,
+  focal length 0.2 % from the board's, fx/fy 0.9999 against the sensor's 1.0001.
+  The board is only texture to it; its geometry is never used.
+- **On the 35 corner frames it fails**: 3 images registered. Features are plentiful
+  (~7600 per image) but only 50 of 595 pairs verify, 7 with 100+ inliers. Circling
+  close around a small object gives neighbouring frames too little shared scene.
+  SfM needs overlapping views of one scene, not a walk around an object.
+- **The principal point.** SfM and the corner, independent of each other, agree at
+  about (2002, 1510); the checkerboard's (2030, 1490) is the outlier. Calling the
+  principal point the corner's weak parameter (above) was wrong -- if anything it
+  is the board's, likely through its print anisotropy or the tilt coupling of a
+  planar target.
+
+What this means for citizen science: the camera can calibrate itself from ~40
+overlapping photos of an ordinary textured room, shot at the working distance, with
+no target at all. The brick corner is then a check, and a scale, not a requirement.
+Untested: how few photos suffice, and whether a room without a checkerboard in it
+gives as much texture.

@@ -238,6 +238,9 @@ dev = [
 raw = [
     { name = "fishsense-core", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
+sfm = [
+    { name = "pycolmap" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -262,6 +265,7 @@ raw = [
     { name = "fishsense-core", marker = "python_full_version != '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "fishsense-core", marker = "python_full_version == '3.13.*' and platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://github.com/UCSD-E4E/fishsense-core/releases/download/fishsense-core-v4.0.0/fishsense_core-4.0.0-cp313-cp313-manylinux_2_34_x86_64.whl" },
 ]
+sfm = [{ name = "pycolmap", specifier = ">=4.2.0" }]
 
 [[package]]
 name = "fonttools"
@@ -796,6 +800,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cd/05/0a34433a064256a578f1783a10da6df098ceaa4a57bbeaa96a6c0352786b/pure_eval-0.2.3.tar.gz", hash = "sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42", size = 19752, upload-time = "2024-07-21T12:58:21.801Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/37/efad0257dc6e593a18957422533ff0f87ede7c9c6ea010a2177d738fb82f/pure_eval-0.2.3-py3-none-any.whl", hash = "sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0", size = 11842, upload-time = "2024-07-21T12:58:20.04Z" },
+]
+
+[[package]]
+name = "pycolmap"
+version = "4.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/ea/a80cd4eb8d91d07dabd6f86b309e7a7c8fdf9d32fb3e447d0b8d413265b5/pycolmap-4.2.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:46c04cf4ed48ef831d303d7d2f6a4a5196a0034c818fe8ef2770920045bf0f40", size = 21014511, upload-time = "2026-09-01T09:31:33.563Z" },
+    { url = "https://files.pythonhosted.org/packages/46/53/40d429bbb07c25637ca8d96950c4aee42142f147ebe4d41e42da3eb27f84/pycolmap-4.2.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:e4b360e4cbab23171ffb883a29317621d294e0450c005339aff6c3a685dbc03d", size = 38247660, upload-time = "2026-09-01T09:31:37.506Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/b7/e70d713da859f8a28023c67b839755fcaa6d8fa2d9b369405040dc873760/pycolmap-4.2.0-cp313-cp313-win_amd64.whl", hash = "sha256:4bfdf9522ceeaea278c409beab624d7072a28f457c0ef1fc695079ce637f1050", size = 24146104, upload-time = "2026-09-01T09:31:40.947Z" },
 ]
 
 [[package]]
