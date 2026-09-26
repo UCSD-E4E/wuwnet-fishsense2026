@@ -14,28 +14,51 @@ correspondences in `data/corner_2026-09-25_raw.npz`, board corners in
 | set | frames | roll (measured from the images) | ISO |
 |---|---|---|---|
 | corner | 35 | 24 upright, 11 rolled 90 deg (poses and EXIF agree) | 400-800 |
-| checkerboard | 14 (12 detected) | all one roll: board's long side along the image | 200-400 |
+| checkerboard | 40 (37 detected) | 23 with the board's long side across the image, 14 along it | 200-400 |
 
-The horizontal checkerboard set was shot first (frames P9250036-061) but was not
-in the copied folder. EXIF orientation is no guide for the board: every frame is
-tagged the same, because the orientation sensor cannot tell rolls apart when the
-camera looks down. Rolls here are measured from each frame's detected grid or pose.
+The horizontal checkerboard set (P9250036-061) was missing from the first copy and
+added later. EXIF orientation is no guide for the board: every frame of the first
+copy is tagged the same, because the orientation sensor cannot tell rolls apart when
+the camera looks down. Rolls here are measured from each frame's detected grid or pose.
 
 ## Results
 
-**Focal length: the corner agrees with the checkerboard.** 24 views, rms 6.6 px:
-fx 2998.2 against the board's 2998.6, **-0.02 %** (bootstrap 68 %: -0.57 to +0.90 %).
+**fx/fy: the corner measures the sensor, in one session.** Both board rolls, same
+session (`board_roll.py`):
 
-**fx/fy: the corner lands on the sensor; the board does not.** The board at this
-roll reads 1.0108. Paired with the same board's 2024 upright set (same board and
-camera, confirmed by matching distortion), it splits into **sensor 1.0005** and a
-**board print error of about 1 %** -- the 2026-09-22 roll test found 1.0009 and
-0.7 % by the same method. The corner reads **1.0010** (bootstrap 0.9991-1.0031),
-**+0.05 % from the sensor**. A single-session brick target measured the camera's
-anisotropy; a single-roll printed board measured its own print.
+| | fx | fy | fx/fy |
+|---|---|---|---|
+| board, long side across (23) | 2948.3 | 2978.4 | 0.98989 |
+| board, long side along (14) | 2998.6 | 2967.8 | 1.01037 |
+| sensor = sqrt(h x v) | | | **1.00008** |
+| corner, 22 views | 2997.1 | | **1.00126** |
 
-The cross-session pairing is the remaining caveat. The horizontal board frames
-from this session remove it: rerun `board_roll.py` with both folders.
+The board's print is 1.02 % anisotropic -- each roll lands about 1 % either side of
+square -- and the sensor is square to 0.01 %. The corner is **+0.12 %** from it.
+Fitting the board's print aspect as a free parameter across both rolls instead
+gives aspect -0.89 % on the long axis and sensor fx/fy 0.99897, so the two methods
+agree to 0.1 %, and the corner is +0.12 to +0.24 % from the sensor between them.
+A printed board at one roll reads its own print; the brick corner does not.
+
+**Focal length: +0.9 % above the board, and probably focus, not the corner.**
+Against the aspect-free board fit (fx 2969.0) the corner reads fx +0.90 %. The two
+were not shot at the same focus: the boards at 0.66-1.98 m (median 1.2 m), the
+corner at 0.10-0.46 m (median 22 cm), and the TG-6 refocuses for every frame. A
+lens's effective focal length grows as it focuses closer -- a thin 4.5 mm lens by
++1.7 % between those medians. Within the corner set, near views (median 18 cm)
+calibrate 1.4 % longer than far ones (31 cm), against +1.1 % predicted, which
+points to focus breathing. The board's near and far halves (0.8 vs 1.5 m, +0.26 %
+predicted) differ by -0.5 %, below what those subsets resolve. Not proven: the
+test is both targets at one locked focus, or the board shot close.
+
+If it holds, a calibration carries the focal length of the distance it was focused
+at, and the corner has to be shot close. Fish are at 1-5 m. Length is tolerant --
+the per-dive beam fit cancels focal scale -- but it belongs in the paper.
+
+(The earlier comparison against the vertical boards alone gave fx -0.02 %: those
+boards' own print error happened to cancel the focus offset. A one-K fit across
+both rolls gives fx 2933 at rms 1.26 because it forces the board's anisotropy into
+one model; don't use it as the reference.)
 
 ## Diagnostics
 
