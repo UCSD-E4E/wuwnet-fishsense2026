@@ -40,23 +40,36 @@ gives aspect -0.89 % on the long axis and sensor fx/fy 0.99897, so the two metho
 agree to 0.1 %, and the corner is +0.12 to +0.24 % from the sensor between them.
 A printed board at one roll reads its own print; the brick corner does not.
 
-**Focal length: +0.9 % above the board, and probably focus, not the corner.**
-Against the aspect-free board fit (fx 2969.0) the corner reads fx +0.90 %. The two
-were not shot at the same focus: the boards at 0.66-1.98 m (median 1.2 m), the
-corner at 0.10-0.46 m (median 22 cm), and the TG-6 refocuses for every frame. A
-lens's effective focal length grows as it focuses closer -- a thin 4.5 mm lens by
-+1.7 % between those medians. Within the corner set, near views (median 18 cm)
-calibrate 1.4 % longer than far ones (31 cm), against +1.1 % predicted, which
-points to focus breathing. The board's near and far halves (0.8 vs 1.5 m, +0.26 %
-predicted) differ by -0.5 %, below what those subsets resolve. Not proven: the
-test is both targets at one locked focus, or the board shot close.
+**The corner calibrates on its own.** Fitting its own distortion, with the same
+two-level rejection, against the board fitted with its print aspect free:
 
-If it holds, a calibration carries the focal length of the distance it was focused
-at, and the corner has to be shot close. Fish are at 1-5 m. Length is tolerant --
-the per-dive beam fit cancels focal scale -- but it belongs in the paper.
+| | fx | fx/fy | cx, cy | k1 | rms px |
+|---|---|---|---|---|---|
+| board, both rolls, aspect free | 2969.0 | 0.9990 | 2030, 1490 | -0.152 | 1.0 |
+| corner alone, k1 + k2 free | 2966.9 (-0.07 %) | 1.0022 | 2002, 1509 | -0.155 | 6.4 |
+| corner alone, k1 free | 2973.9 (+0.16 %) | 1.0019 | 1997, 1515 | -0.127 | 6.3 |
+| corner, board's distortion held | 2995.8 (+0.90 %) | 1.0014 | 2002, 1512 | (board) | 6.5 |
+
+- **Focal length: within 0.1-0.2 % of the board**, from bricks alone. The +0.9 %
+  appears only when the corner is handed the board's distortion, so it is the fit
+  trading distortion for focal length, at least in part. Focus breathing -- the
+  corner was focused at ~22 cm, the board at ~1.2 m -- would push the same way, and
+  near corner views read 1.4 % longer than far ones, but that split was also fitted
+  with the board's distortion. Unresolved; the test is one locked focus.
+- **fx/fy: about 0.2 % from the sensor**, where a single-roll board is 1 % off.
+- **k1 matches** (-0.155 against -0.152); k2 is not determined by the corner.
+- **Principal point is the weak parameter**: about 30 px left and 20 px low of the
+  board's, stable across distortion models. A small target does not cover enough of
+  the frame to pin it; frames with the target near the image edges would.
+- **Per-point residual 6.3 px** against the board's 1.0 -- more views for the same
+  certainty; lower ISO should help.
+
+For FishSense this is sufficient: the per-dive beam fit absorbs focal scale and the
+principal point, and the corner gets right the one thing a single-roll board gets
+wrong, fx/fy.
 
 (The earlier comparison against the vertical boards alone gave fx -0.02 %: those
-boards' own print error happened to cancel the focus offset. A one-K fit across
+boards' own print error happened to cancel the offset. A one-K fit across
 both rolls gives fx 2933 at rms 1.26 because it forces the board's anisotropy into
 one model; don't use it as the reference.)
 
